@@ -1,59 +1,71 @@
 ## Linguagem ubíqua
+
 |
  Termo 
-|
+→
  Definição 
 |
-|
 ---
-|
----
-|
 |
  Carga Química 
-|
+→
  Lote de produto químico registrado para movimentação portuária 
 |
+
 |
  Produto Químico 
-|
+→
  Item cadastrado no sistema, com nome e classificação de risco 
 |
+
 |
  Classificação de Risco 
-|
+→
  Categoria de periculosidade do produto (inflamável, corrosivo, tóxico, explosivo) 
 |
+
 |
  Responsável Técnico 
-|
+→
  Profissional habilitado que valida e assina a carga 
 |
+
 |
  Documentação Obrigatória 
-|
+→
  Conjunto de documentos exigidos antes da liberação (ex: ficha de segurança, laudo técnico) 
 |
+
 |
  Status da Carga 
-|
+→
  Situação atual da carga (registrada, em inspeção, liberada, bloqueada, cancelada) 
 |
+
 |
  Liberação 
-|
+→
  Ato de autorizar a movimentação da carga 
 |
+
 |
  Bloqueio 
-|
+→
  Impedimento formal de movimentação por não conformidade 
 |
+
 |
  Inspeção 
-|
+→
  Verificação técnica realizada antes da liberação 
 |
+
+| 
+ Área de Armazenamento 
+→ 
+ Espaço físico destinado a reservar e acomodar cargas químicas, controlado por capacidade e disponibilidade 
+|
+
 ## Entidades
 
 ### Produto Químico
