@@ -31,7 +31,7 @@
 2. Ator envolvido: Administrador do Sistema ou Gestor Operacional.
 
 3. Entrada esperada:
-* Para Registro: Nome do produto, Produto(s) Químico(s) associado(s), Classificação de Risco
+* Para Registro: id, produtoQuimico (referência), quantidade, status, responsavelTecnico (referência), documentos (lista), dataRegistro
 
 5. Saída esperada:
 * No Cadastro: mensagem de sucesso e a carga no sistema para o status ser alterado.
@@ -43,6 +43,6 @@
 * Um produto químico deve ser único, não deve ser permitido o cadastro de produtos duplicados (mesmo nome e classe de risco).
 
 9. Possíveis erros ou exceções:
-* Uma carga química não pode ser registrada sem produto químico associado;
-• Uma carga química não pode ser registrada com produto químico inativo;
-• Uma carga química não pode ser registrada sem classificação de risco;
+* Uma carga química não pode ser registrada sem produto químico associado.
+* Uma carga química não pode ser registrada com produto químico inativo.
+* Uma carga química não pode ser registrada sem classificação de risco.
