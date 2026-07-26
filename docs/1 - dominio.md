@@ -7,12 +7,6 @@
 |
 ---
 |
- Carga Química 
-→
- Lote de produto químico registrado para movimentação portuária 
-|
-
-|
  Produto Químico 
 →
  Item cadastrado no sistema, com nome e classificação de risco 
@@ -22,6 +16,12 @@
  Classificação de Risco 
 →
  Categoria de periculosidade do produto (inflamável, corrosivo, tóxico, explosivo) 
+|
+
+|
+ Carga Química 
+→
+ Lote de produto químico registrado para movimentação portuária 
 |
 
 |
@@ -109,6 +109,7 @@
 - RN06: Uma carga cancelada não pode ser liberada
 - RN07: Uma carga em inspeção não pode ser finalizada sem antes ser liberada
 - RN12: Não pode ser registrada sem responsável técnico
+- RN13: Uma carga química só pode ser registrada em data menor que hoje com aprovação de um cargo superior
 
 **Relacionamento:**
 - 1 Carga Química → 1 Produto Químico
