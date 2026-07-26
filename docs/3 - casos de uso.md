@@ -1,6 +1,6 @@
-## Todos os casos de uso planejados (objetivo, ator, entrada, saída, regras, exceções)
+# Todos os casos de uso planejados (objetivo, ator, entrada, saída, regras, exceções)
 
-# Gerenciar Produto Químico (Cadastrar e Inativar)
+## Gerenciar Produto Químico (Cadastrar e Inativar)
 
 1. Objetivo: manter um catálogo atualizado e seguro dos produtos químicos que circulam no porto, permitindo o registro de novos itens e a desativação daqueles que não devem mais ser associados a novas cargas.
 
@@ -24,7 +24,7 @@
 * Tentativa de cadastrar produto com campos obrigatórios em branco (o sistema deve bloquear e emitir alerta).
 * Tentativa de associar um produto que acabou de ser inativado a uma nova carga (o sistema deve impedir a operação).
 
-# Registrar Carga Química
+## Registrar Carga Química
 
 1. Objetivo: manter um catálogo atualizado e seguro das cargas químicas que circulam no porto, permitindo o registro de novos itens.
 
