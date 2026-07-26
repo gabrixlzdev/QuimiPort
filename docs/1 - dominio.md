@@ -231,3 +231,4 @@ A Carga Química é a raiz do agregado porque concentra as decisões que precisa
 - RN10: Um produto químico inativo não pode ser usado em novas cargas
 - RN11: A quantidade da carga deve ser maior que zero
 - RN12: Toda carga deve possuir um responsável técnico informado
+- RN13: Uma carga química só pode ser registrada em data menor que hoje com aprovação de um cargo superior
