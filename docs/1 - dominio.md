@@ -1,4 +1,4 @@
-## Linguagem ubíqua
+# Linguagem ubíqua
 
  Termo 
 →
@@ -46,9 +46,8 @@
  Espaço físico destinado a reservar e acomodar cargas químicas, controlado por capacidade e disponibilidade 
 
 
-## Entidades
----
-### Produto Químico
+# Entidades
+## Produto Químico
 
 **Responsabilidade:** Representar um tipo de produto químico que pode ser associado a cargas.
 
@@ -65,7 +64,7 @@
 
 **Relacionamento:** 1 Produto Químico → N Cargas Químicas
 
-### Carga Química
+## Carga Química
 
 **Responsabilidade:** Representar um lote de produto químico em movimentação, concentrando as regras de liberação, bloqueio e status.
 
@@ -94,7 +93,7 @@
 - 1 Carga Química → 1 Responsável Técnico
 - 1 Carga Química → N Documentos da Carga
 
-### Responsável Técnico
+## Responsável Técnico
 
 **Responsabilidade:** Representar o profissional habilitado a validar cargas químicas.
 
@@ -108,7 +107,7 @@
 
 **Relacionamento:** 1 Responsável Técnico → N Cargas Químicas
 
-### Documento da Carga
+## Documento da Carga
 
 **Responsabilidade:** Representar um documento obrigatório vinculado a uma carga.
 
@@ -123,7 +122,7 @@
 
 **Relacionamento:** N Documentos da Carga → 1 Carga Química
 
-### Inspeção
+## Inspeção
 
 **Responsabilidade:** Representar a verificação técnica realizada antes da liberação de uma carga.
 
@@ -139,7 +138,7 @@
 
 **Relacionamento:** N Inspeções → 1 Carga Química
 
-### Área de armazenamento
+## Área de armazenamento
 
 **Responsabilidade:** Representar o local destinado a reservar um espaço para o armazenamento das cargas químicas.
 
@@ -155,26 +154,24 @@
 
 **Relacionamento:** 1 Área de armazenamento → N Cargas Químicas
 
-## Objetos de valor
----
-### Quantidade
+# Objetos de valor
+## Quantidade
 Representa o volume/peso da carga. Não possui identidade própria.
 - valor: number
 - unidade: "kg" | "l" | "ton"
 
 >RN11: valor deve ser maior que zero.
 
-### Classificação de Risco
+## Classificação de Risco
 Categoria de periculosidade do produto.
 - Inflamável | Corrosivo | Tóxico | Explosivo
 
-### Status da Carga
+## Status da Carga
 Situação atual da carga química.
 - Registrada | Em Inspeção | Liberada | Bloqueada | Cancelada
 
-## Agregados
----
-### Agregado: Carga Química
+# Agregados
+## Agregado: Carga Química
 
 A Carga Química é a raiz do agregado porque concentra as decisões que precisam de consistência imediata: associação com produto, documentação, responsável técnico e status.
 
@@ -188,8 +185,7 @@ A Carga Química é a raiz do agregado porque concentra as decisões que precisa
 > Observação: esta é uma primeira versão do agregado.
 
 
-## Regras de negócio
----
+# Regras de negócio
 - RN01: Uma carga química não pode ser registrada sem produto químico associado
 - RN02: Uma carga química não pode ser registrada com produto químico inativo
 - RN03: Uma carga química não pode ser registrada sem classificação de risco
