@@ -183,19 +183,3 @@ A Carga Química é a raiz do agregado porque concentra as decisões que precisa
 - Carga cancelada não pode ser liberada
 
 > Observação: esta é uma primeira versão do agregado.
-
-
-# Regras de negócio
-- RN01: Uma carga química não pode ser registrada sem produto químico associado
-- RN02: Uma carga química não pode ser registrada com produto químico inativo
-- RN03: Uma carga química não pode ser registrada sem classificação de risco
-- RN04: Uma carga química não pode ser liberada sem documentação obrigatória
-- RN05: Uma carga bloqueada não pode entrar em movimentação
-- RN06: Uma carga cancelada não pode ser liberada
-- RN07: Uma carga em inspeção não pode ser finalizada sem antes ser liberada
-- RN08: Um produto químico não pode ser cadastrado sem nome
-- RN09: Um produto químico não pode ser cadastrado sem classe de risco
-- RN10: Um produto químico inativo não pode ser usado em novas cargas
-- RN11: A quantidade da carga deve ser maior que zero
-- RN12: Toda carga deve possuir um responsável técnico informado
-- RN13: Uma carga química só pode ser registrada em data menor que hoje com aprovação de um cargo superior
