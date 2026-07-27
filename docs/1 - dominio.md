@@ -183,3 +183,11 @@ A Carga Química é a raiz do agregado porque concentra as decisões que precisa
 - Carga cancelada não pode ser liberada
 
 > Observação: esta é uma primeira versão do agregado.
+
+# Perfis de usuários
+- Administrador do sistema
+- Responsável técnico
+- Operador portuário
+- Analista de documentação
+- Analista de qualidade
+- Gestor operacional
