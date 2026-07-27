@@ -1,73 +1,53 @@
 ## Linguagem ubíqua
 
-|
  Termo 
 →
  Definição 
-|
 ---
-|
+
  Produto Químico 
 →
  Item cadastrado no sistema, com nome e classificação de risco 
-|
 
-|
  Classificação de Risco 
 →
  Categoria de periculosidade do produto (inflamável, corrosivo, tóxico, explosivo) 
-|
 
-|
  Carga Química 
 →
  Lote de produto químico registrado para movimentação portuária 
-|
 
-|
  Responsável Técnico 
 →
  Profissional habilitado que valida e assina a carga 
-|
 
-|
  Documentação Obrigatória 
 →
  Conjunto de documentos exigidos antes da liberação (ex: ficha de segurança, laudo técnico) 
-|
 
-|
  Status da Carga 
 →
  Situação atual da carga (registrada, em inspeção, liberada, bloqueada, cancelada) 
-|
 
-|
  Liberação 
 →
  Ato de autorizar a movimentação da carga 
-|
 
-|
  Bloqueio 
 →
  Impedimento formal de movimentação por não conformidade 
-|
 
-|
  Inspeção 
 →
  Verificação técnica realizada antes da liberação 
-|
 
-| 
  Área de Armazenamento 
 → 
  Espaço físico destinado a reservar e acomodar cargas químicas, controlado por capacidade e disponibilidade 
-|
+
 
 ## Entidades
-
+---
 ### Produto Químico
 
 **Responsabilidade:** Representar um tipo de produto químico que pode ser associado a cargas.
@@ -84,8 +64,6 @@
 - RN10: Se inativo, não pode ser usado em novas cargas
 
 **Relacionamento:** 1 Produto Químico → N Cargas Químicas
-
----
 
 ### Carga Química
 
@@ -116,8 +94,6 @@
 - 1 Carga Química → 1 Responsável Técnico
 - 1 Carga Química → N Documentos da Carga
 
----
-
 ### Responsável Técnico
 
 **Responsabilidade:** Representar o profissional habilitado a validar cargas químicas.
@@ -131,8 +107,6 @@
 - RN12: Toda carga deve ter um responsável técnico informado
 
 **Relacionamento:** 1 Responsável Técnico → N Cargas Químicas
-
----
 
 ### Documento da Carga
 
@@ -149,8 +123,6 @@
 
 **Relacionamento:** N Documentos da Carga → 1 Carga Química
 
----
-
 ### Inspeção
 
 **Responsabilidade:** Representar a verificação técnica realizada antes da liberação de uma carga.
@@ -166,8 +138,6 @@
 - RN07: Carga em inspeção não pode ser finalizada sem antes ser liberada
 
 **Relacionamento:** N Inspeções → 1 Carga Química
-
----
 
 ### Área de armazenamento
 
@@ -186,7 +156,7 @@
 **Relacionamento:** 1 Área de armazenamento → N Cargas Químicas
 
 ## Objetos de valor
-
+---
 ### Quantidade
 Representa o volume/peso da carga. Não possui identidade própria.
 - valor: number
@@ -203,7 +173,7 @@ Situação atual da carga química.
 - Registrada | Em Inspeção | Liberada | Bloqueada | Cancelada
 
 ## Agregados
-
+---
 ### Agregado: Carga Química
 
 A Carga Química é a raiz do agregado porque concentra as decisões que precisam de consistência imediata: associação com produto, documentação, responsável técnico e status.
@@ -219,7 +189,7 @@ A Carga Química é a raiz do agregado porque concentra as decisões que precisa
 
 
 ## Regras de negócio
-
+---
 - RN01: Uma carga química não pode ser registrada sem produto químico associado
 - RN02: Uma carga química não pode ser registrada com produto químico inativo
 - RN03: Uma carga química não pode ser registrada sem classificação de risco
