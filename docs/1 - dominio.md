@@ -186,8 +186,8 @@ A Carga Química é a raiz do agregado porque concentra as decisões que precisa
 
 # Perfis de usuários
 - **Administrador do sistema (ou sysadmin)**: profissional de T.I. responsável por gerenciar, configurar, manter e proteger o sistema de informação QuimiPort. O seu principal objetivo é garantir que os sistemas opere sem interrupções, com bom desempenho e total segurança. Não deve fazer alterações em dados, apenas em metadados.
-- **Responsável técnico**: profissional habilitado a validar, liberar, bloquear e cancelar cargas químicas; atualizar status da carga química;  consultar cargas por status; consultar histórico da carga química;
+- **Responsável técnico**: profissional habilitado a validar, liberar, bloquear e cancelar cargas químicas; atualizar status da carga química; consultar cargas por status; consultar histórico da carga química;
 - **Operador portuário**: profissional habilitado a registrar carga química; solicitar inspeção; registrar documentação obrigatória de cargas químicas; consultar cargas por status; consultar histórico da carga química;
-- **Gestor operacional**: profissional habilitado a cadastrar produto químico, inativar produto químico, registrar carga química, solicitar inspeção, registrar documentação obrigatória de cargas químicas, consultar cargas por status; consultar histórico da carga química;
+- **Gestor operacional**: profissional habilitado a cadastrar produto químico, inativar produto químico; registrar carga química, solicitar inspeção de caga química; cadastrar documentação obrigatória de cargas químicas; consultar cargas por status; consultar histórico da carga química;
 - **Analista de documentação**: profissional habilitado a controlar e validar a documentação obrigatória de cargas químicas; atualizar status da carga química; consultar cargas por status; consultar histórico da carga química;
 - **Analista de qualidade**: profissional habilitado a validar regras de segurança; inspecionar, bloquear cargas químicas; atualizar status da carga química; consultar cargas por status; consultar histórico da carga química;
