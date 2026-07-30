@@ -1,11 +1,12 @@
 # Regras de negócio
 ## [RN-PRQ] Regras de Produto Químico
-- RN-PRQ-01: Todo produto químico deve ser cadastrado com nome
-- RN-PRQ-02: Todo produto químico deve ser cadastrado com classificação de risco
-- RN-PRQ-03: Todo produto químico é criado com o status automaticamente definido como 'Ativo'
-- RN-PRQ-04: Todo produto químico inativo deve ficar indisponível para ser associado a novas cargas químicas
-- RN-PRQ-05: Todo produto químico deve ser único, não deve ser permitido o cadastro de produtos duplicados (mesmo nome e classe de risco)
-- RN-PRQ-06: Um produto químico só pode ser inativado com a aprovação de um cargo superior
+- RN-PRQ-01: Todo produto químico recebe um ID definido automaticamente
+- RN-PRQ-02: Todo produto químico deve ser cadastrado com nome
+- RN-PRQ-03: Todo produto químico deve ser cadastrado com classificação de risco
+- RN-PRQ-04: Todo produto químico é criado com o status automaticamente definido como 'Ativo'
+- RN-PRQ-05: Todo produto químico inativo deve ficar indisponível para ser associado a novas cargas químicas
+- RN-PRQ-06: Todo produto químico deve ser único, não deve ser permitido o cadastro de produtos duplicados (mesmo nome e classe de risco)
+- RN-PRQ-07: Um produto químico só pode ser inativado com a aprovação de um cargo superior
 
 ## [RN-CRQ] Regras de Carga Química
 - RN-CRQ-01: Toda carga química recebe um ID definido automaticamente
