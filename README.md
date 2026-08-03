@@ -44,6 +44,22 @@ Acesse os documentos detalhados de cada módulo da solução:
 
 ---
 
+## 🧭 Como Navegar pela Documentação
+
+Esta documentação está organizada seguindo a jornada de entendimento do domínio até a arquitetura técnica. Recomendamos a leitura na seguinte ordem:
+
+1. **[Domínio e Contexto](docs/1_dominio.md)** — comece aqui para entender o problema, os usuários envolvidos e a linguagem ubíqua do negócio.
+2. **[Modelagem com DDD](docs/2_modelagem_DDD.md)** — veja como o domínio foi modelado em entidades, objetos de valor e agregados.
+3. **[Casos de Uso e Fluxos](docs/3_casos_de_uso.md)** — os principais fluxos que o sistema deve suportar.
+4. **[Regras de Negócio](docs/4_regras_de_negocio.md)** — as validações e restrições que protegem a consistência do domínio.
+5. **[Arquitetura e Design Técnico](docs/5_arquitetura.md)** — como o projeto será estruturado tecnicamente.
+6. **[Decisões Arquiteturais](docs/7_decisoes_arquiteturais.md)** — o "porquê" por trás das escolhas técnicas.
+7. **[Plano de Qualidade e Testes](docs/6_estrutura_de_testes.md)** — como o projeto será testado nas próximas fases.
+
+> Se você só tem alguns minutos, priorize os itens 1, 3 e 4 — eles concentram o entendimento do problema e das regras de negócio.
+
+---
+
 ## 👥 Autores & Equipe
 
 * **Integrantes:** `[INSIRA O NOME DOS INTEGRANTES E RMS DA EQUIPE]`

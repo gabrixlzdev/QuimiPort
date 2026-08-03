@@ -75,6 +75,7 @@ classDiagram
     CargaQuimicaAggregateRoot "1" *-- "1" ResponsavelTecnicoVO : possui
     CargaQuimicaAggregateRoot ..> ProdutoQuimicoEntity : referencia por ProdutoQuimicoId
     ProdutoQuimicoEntity "1" *-- "1" ClassificacaoRiscoVO : possui
+```
 
 2.2 Entidades de Domínio
     1. CargaQuimica (Aggregate Root)
