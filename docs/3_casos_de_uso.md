@@ -23,6 +23,27 @@ flowchart LR
   Qualidade --> UC5[Solicitar e Realizar Inspeção]
 
   Todos --> UC8[Consultar Cargas e Trilha de Auditoria]
+
+  subgraph SaidaEsperada [Saída Esperada]
+    direction LR
+    S1([Produto salvo - status ATIVO])
+    S2([Produto atualizado - status INATIVO])
+    S3([Carga criada - status REGISTRADA])
+    S4([Documento anexado - carga em EM_ANALISE])
+    S5([Parecer registrado - LIBERADA ou BLOQUEADA])
+    S6([Carga com status LIBERADA])
+    S7([Carga com status BLOQUEADA ou em reanálise])
+    S8([Listagem de cargas + histórico de status])
+  end
+
+  UC1 --> S1
+  UC2 --> S2
+  UC3 --> S3
+  UC4 --> S4
+  UC5 --> S5
+  UC6 --> S6
+  UC7 --> S7
+  UC8 --> S8
 ```
 ---
 
