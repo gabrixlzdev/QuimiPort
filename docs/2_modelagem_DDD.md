@@ -76,7 +76,6 @@ classDiagram
     CargaQuimicaAggregateRoot ..> ProdutoQuimicoEntity : referencia por ProdutoQuimicoId
     ProdutoQuimicoEntity "1" *-- "1" ClassificacaoRiscoVO : possui
 ```
-
 2.2 Entidades de Domínio
     1. CargaQuimica (Aggregate Root)
         Responsabilidade: Gerenciar o ciclo de vida da carga no terminal portuário, garantir que a movimentação só ocorra se a carga estiver em conformidade e proteger as transições de status.
