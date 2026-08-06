@@ -58,7 +58,7 @@ flowchart LR
 
 ### UC-002 — Inativar Produto Químico
 
-- **Objetivo:** Desativar produtos químicos que não devem mais ser associados a novas cargas que darem entrada no terminal.
+- **Objetivo:** Desativar produtos químicos que não devem mais ser associados a novas cargas que derem entrada no terminal.
 - **Ator Principal:** Gestor Operacional (com aprovação de cargo superior).
 - **Entrada Esperada:** `produtoQuimicoId`, `motivoInativacao`, `autorizacaoSuperiorId`.
 - **Saída Esperada:** Mensagem de sucesso e status do produto alterado para `INATIVO`.
