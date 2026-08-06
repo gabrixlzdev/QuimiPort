@@ -1,8 +1,41 @@
 # 3. MAPEAMENTO DOS CASOS DE USO E FLUXOS DO SISTEMA
 
+## 3.1 Diagrama da Visão Geral dos Atores e Casos de Uso
+
+```mermaid
+flowchart LR
+  Gestor([Gestor Operacional / Administrador])
+  Operador([Operador Portuário])
+  Analista([Analista de Documentação])
+  Qualidade([Analista de Qualidade / Inspetor])
+  Todos([Todos os Atores Autenticados])
+
+  Gestor --> UC1[Cadastrar Produto Químico]
+  Gestor --> UC2[Inativar Produto Químico]
+  Gestor --> UC3[Registrar Carga Química]
+  Gestor --> UC6[Liberar Carga Química]
+  Gestor --> UC7[Bloquear ou Desbloquear Carga Química]
+
+  Operador --> UC3
+
+  Analista --> UC4[Validar Documentação da Carga]
+
+  Qualidade --> UC5[Solicitar e Realizar Inspeção]
+
+  Todos --> UC8[Consultar Cargas e Trilha de Auditoria]
+
+  UC1 -->|Saída Esperada| S1([Produto salvo - status ATIVO])
+  UC2 -->|Saída Esperada| S2([Produto atualizado - status INATIVO])
+  UC3 -->|Saída Esperada| S3([Carga criada - status REGISTRADA])
+  UC4 -->|Saída Esperada| S4([Documento anexado - carga em EM_ANALISE])
+  UC5 -->|Saída Esperada| S5([Parecer registrado - LIBERADA ou BLOQUEADA])
+  UC6 -->|Saída Esperada| S6([Carga com status LIBERADA])
+  UC7 -->|Saída Esperada| S7([Carga com status BLOQUEADA ou em reanálise])
+  UC8 -->|Saída Esperada| S8([Listagem de cargas + histórico de status])
+```
 ---
 
-## 3.1 Especificação Detalhada dos Casos de Uso
+## 3.2 Especificação Detalhada dos Casos de Uso
 
 ### UC-001 — Cadastrar Produto Químico
 
@@ -25,7 +58,7 @@
 
 ### UC-002 — Inativar Produto Químico
 
-- **Objetivo:** Desativar produtos químicos que não devem mais ser associados a novas cargas que darem entrada no terminal.
+- **Objetivo:** Desativar produtos químicos que não devem mais ser associados a novas cargas que derem entrada no terminal.
 - **Ator Principal:** Gestor Operacional (com aprovação de cargo superior).
 - **Entrada Esperada:** `produtoQuimicoId`, `motivoInativacao`, `autorizacaoSuperiorId`.
 - **Saída Esperada:** Mensagem de sucesso e status do produto alterado para `INATIVO`.
@@ -152,7 +185,9 @@
 
 ---
 
-## 3.2 Diagrama de Transição de Status da Carga
+
+
+## 3.3 Diagrama de Transição de Status da Carga
 
 ```mermaid
 stateDiagram-v2
@@ -178,7 +213,7 @@ stateDiagram-v2
     FINALIZADA --> [*]
 ```
 
-## 3.3 Matriz Consolidada de Transição de Status e Validações
+## 3.4 Matriz Consolidada de Transição de Status e Validações
 
 | Status Atual      | Ação / Evento Trigger | Próximo Status | Invariantes e Regras de Validação Exigidas                                                                      |
 | :---------------- | :-------------------- | :------------- | :-------------------------------------------------------------------------------------------------------------- |
