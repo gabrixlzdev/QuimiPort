@@ -61,7 +61,11 @@ Esta documentação está organizada seguindo a jornada de entendimento do domí
 ---
 
 ## 👥 Autores & Equipe
-
-* **Integrantes:** `[INSIRA O NOME DOS INTEGRANTES E RMS DA EQUIPE]`
-* **Curso:** Pós-Tech em Full Stack Development
 * **Instituição:** FIAP
+* **Curso:** Pós-Tech em Full Stack Development
+* **Integrantes (matrícula e nome completo):**
+1. rm376907 - Andreia Alencar Carvalho da Silva
+2. rm376913 - Gabriel Xavier Luz
+3. rm374397 - Ivo Shiguenobu Sacagami
+4. rm376888 - Jaina Braga Barreto
+5. rm375380 - Stefany Beacides Messias dos Santos
