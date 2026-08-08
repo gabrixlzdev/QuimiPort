@@ -77,6 +77,7 @@ classDiagram
     ProdutoQuimicoEntity "1" *-- "1" ClassificacaoRiscoVO : possui
 ```
 2.2 Entidades de Domínio
+
     1. CargaQuimica (Aggregate Root)
         Responsabilidade: Gerenciar o ciclo de vida da carga no terminal portuário, garantir que a movimentação só ocorra se a carga estiver em conformidade e proteger as transições de status.
 
@@ -118,6 +119,7 @@ classDiagram
         Regras Principais: Uma inspeção reprovada exige justificativa e dispara automaticamente o bloqueio da carga.
 
 2.3 Objetos de Valor (Value Objects)
+
     1. ClassificacaoRisco
         Atributos: classe (ex.: "8 - Corrosivos"), subclasse (ex.: "8.1"), numeroONU (ex.: "1830"), grupoEmbalagem (ex.: "PG II").
 
@@ -139,7 +141,9 @@ classDiagram
         Invariantes: Formato alfanumérico com tamanho entre 8 e 20 caracteres sem espaços ou caracteres especiais.
 
 2.4 Agregados e Invariantes
+
     Agregado Principal: CargaQuimica
+    
     Aggregate Root: CargaQuimica
 
     Invariantes Protegidas pelo Agregado:
@@ -148,10 +152,8 @@ classDiagram
 
     Exigência de Inspeção Finalizada: A carga não pode ser liberada sem ter ao menos uma inspeção registrada com resultado APROVADO.
 
-    Imutabilidade de Cargas Finalizadas/Canceladas: Cargas que atingem os estados CANCELADA ou FINALIZADA não podem aceitar inclusão de documentos,     alterações de responsáveis ou novas transições de status.
+    Imutabilidade de Cargas Finalizadas/Canceladas: Cargas que atingem os estados CANCELADA ou FINALIZADA não podem aceitar inclusão de documentos, alterações de responsáveis ou novas transições de status.
 
     Coerência de Responsabilidade Técnica: Nenhuma carga é transicionada para REGISTRADA ou etapas subsequentes sem um ResponsavelTecnico associado.
-
-    Limites do Agregado e Decisão Arquitetural:
-    A entidade ProdutoQuimico NÃO faz parte do agregado CargaQuimica. O agregado mantém apenas uma referência por identificador (produtoQuimicoId).     Isso evita um agregado gigante e diminui o acoplamento, permitindo que alterações no catálogo global de produtos não bloqueiem  concorrencialmente as transações operacionais das cargas físicas.
-```
+    
+    Limites do Agregado e Decisão Arquitetural: A entidade ProdutoQuimico NÃO faz parte do agregado CargaQuimica. O agregado mantém apenas uma referência por identificador (produtoQuimicoId). Isso evita um agregado gigante e diminui o acoplamento, permitindo que alterações no catálogo global de produtos não bloqueiem  concorrencialmente as transações operacionais das cargas físicas.```
