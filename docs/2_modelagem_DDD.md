@@ -11,7 +11,7 @@ classDiagram
         -CodigoIdentificacao codigoIdentificacao
         -ProdutoQuimicoId produtoQuimicoId
         -QuantidadeCarga quantidade
-        -ResponsavelTecnico responsavelTecnico
+        -ResponsavelTecnicoId responsavelTecnicoId
         -StatusCarga status
         -List~DocumentoCarga~ documentos
         -List~Inspecao~ inspecoes
@@ -39,7 +39,7 @@ classDiagram
         -Date dataValidade
         -StatusValidacao statusValidacao
         +validar()
-        +estaVencido() boolean
+        +estaVencido(agora) boolean
     }
 
     class InspecaoEntity {
@@ -63,7 +63,8 @@ classDiagram
         -UnidadeMedida unidade
     }
 
-    class ResponsavelTecnicoVO {
+    class ResponsavelTecnicoEntity {
+        -ResponsavelTecnicoId id
         -string nome
         -string registroConselho
         -string ufConselho
@@ -72,7 +73,7 @@ classDiagram
     CargaQuimicaAggregateRoot "1" *-- "many" DocumentoCargaEntity : contem
     CargaQuimicaAggregateRoot "1" *-- "many" InspecaoEntity : contem
     CargaQuimicaAggregateRoot "1" *-- "1" QuantidadeCargaVO : possui
-    CargaQuimicaAggregateRoot "1" *-- "1" ResponsavelTecnicoVO : possui
+    CargaQuimicaAggregateRoot ..> ResponsavelTecnicoEntity : referencia por ResponsavelTecnicoId
     CargaQuimicaAggregateRoot ..> ProdutoQuimicoEntity : referencia por ProdutoQuimicoId
     ProdutoQuimicoEntity "1" *-- "1" ClassificacaoRiscoVO : possui
 ```
@@ -82,7 +83,7 @@ classDiagram
 
         Identidade: CargaId (UUID v4 imutável).
 
-        Principais Atributos: id, codigoIdentificacao, produtoQuimicoId, quantidade, responsavelTecnico, documentos (lista), inspecoes (lista),     status, historicoStatus (lista), dataCriacao.
+        Principais Atributos: id, codigoIdentificacao, produtoQuimicoId, quantidade, responsavelTecnicoId, documentos (lista), inspecoes (lista), status, historicoStatus (lista), dataCriacao.
 
         Regras Principais: Não transita para LIBERADA sem documentação completa e inspeção aprovada; não aceita alterações se estiver nos estados       CANCELADA ou FINALIZADA.
 
@@ -104,9 +105,9 @@ classDiagram
 
         Identidade: DocumentoId (UUID v4 imutável, no escopo da Carga).
 
-        Principais Atributos: id, tipoDocumento, numeroReferencia, urlArquivo, dataEmissao, dataValidade, statusValidacao (PENDENTE, VALIDADO,      REJEITADO).
+        Principais Atributos: id, tipoDocumento, numeroReferencia, urlArquivo, dataEmissao, dataValidade, statusValidacao (`PENDENTE`, `VALIDADO`, `REJEITADO`).
 
-        Regras Principais: Se a data de validade for anterior à data atual, o documento é marcado como expirado e invalida a liberação da carga.
+        Regras Principais: `EXPIRADO` não é um status persistido. O método puro `estaVencido(agora)` calcula `dataValidade < agora`; um documento vencido é inelegível para liberação mesmo que esteja `VALIDADO`.
 
     4. Inspecao
         Responsabilidade: Armazenar o parecer, a data, o inspetor e o resultado da vistoria física realizada no pátio portuário.
@@ -128,12 +129,7 @@ classDiagram
 
         Invariantes: O valor deve ser estritamente maior que zero (valor > 0).
 
-    3. ResponsavelTecnico
-        Atributos: nome, registroConselho (CRQ ou CREA), ufConselho, emailContato.
-
-        Invariantes: registroConselho e ufConselho não podem ser nulos nem vazios.
-
-    4. CodigoIdentificacao
+    3. CodigoIdentificacao
         Atributos: codigo (string).
 
         Invariantes: Formato alfanumérico com tamanho entre 8 e 20 caracteres sem espaços ou caracteres especiais.
@@ -144,14 +140,35 @@ classDiagram
 
     Invariantes Protegidas pelo Agregado:
 
-    Consistência Documental para Liberação: A carga jamais transita para LIBERADA se existir qualquer documento obrigatório pendente ou reprovado.
+    Consistência Documental para Liberação: A carga jamais transita para LIBERADA se existir documento obrigatório ausente, pendente, rejeitado ou vencido no instante da decisão.
 
     Exigência de Inspeção Finalizada: A carga não pode ser liberada sem ter ao menos uma inspeção registrada com resultado APROVADO.
 
     Imutabilidade de Cargas Finalizadas/Canceladas: Cargas que atingem os estados CANCELADA ou FINALIZADA não podem aceitar inclusão de documentos,     alterações de responsáveis ou novas transições de status.
 
-    Coerência de Responsabilidade Técnica: Nenhuma carga é transicionada para REGISTRADA ou etapas subsequentes sem um ResponsavelTecnico associado.
+    Coerência de Responsabilidade Técnica: Nenhuma carga é transicionada para REGISTRADA ou etapas subsequentes sem um `ResponsavelTecnicoId` associado e válido.
 
     Limites do Agregado e Decisão Arquitetural:
-    A entidade ProdutoQuimico NÃO faz parte do agregado CargaQuimica. O agregado mantém apenas uma referência por identificador (produtoQuimicoId).     Isso evita um agregado gigante e diminui o acoplamento, permitindo que alterações no catálogo global de produtos não bloqueiem  concorrencialmente as transações operacionais das cargas físicas.
+    As entidades ProdutoQuimico e ResponsavelTecnico NÃO fazem parte do agregado CargaQuimica. O agregado mantém apenas referências por identificador. Isso evita um agregado gigante e reduz o acoplamento.
+
+## 2.5 Bounded Contexts e Relacionamentos
+
+Cada Bounded Context possui linguagem, modelo e serviços de aplicação próprios; a integração ocorre por contratos explícitos, sem acesso direto às tabelas ou entidades internas de outro contexto.
+
+| Bounded Context | Responsabilidade | Modelo principal | Contrato oferecido |
+| :--- | :--- | :--- | :--- |
+| **Gestão de Cargas** | Registro, ciclo de vida, inspeção, bloqueio e liberação | `CargaQuimica`, `Inspecao`, `QuantidadeCarga` | Casos de uso de registro, inspeção e transição de estado |
+| **Catálogo Químico** | Cadastro, classificação de risco e ativação de produtos | `ProdutoQuimico`, `ClassificacaoRisco` | Consulta de produto ativo por `ProdutoQuimicoId` |
+| **Compliance** | Documentos obrigatórios, validade, responsabilidade técnica e parecer de conformidade | `DocumentoCarga`, `ResponsavelTecnico`, checklist documental | Parecer de elegibilidade documental por carga |
+
+```mermaid
+flowchart LR
+    GC[Gestão de Cargas]
+    CQ[Catálogo Químico]
+    CO[Compliance]
+    GC -->|consulta produto ativo por ID| CQ
+    GC -->|solicita parecer documental| CO
+    CO -->|retorna elegibilidade e motivos| GC
 ```
+
+Gestão de Cargas é o contexto consumidor (*downstream*). Catálogo Químico e Compliance são fornecedores (*upstream*) por interfaces definidas na camada de aplicação.

@@ -57,5 +57,5 @@
     - Explicita na assinatura do método todos os erros de negócio possíveis que ele pode retornar.
     - Obriga o desenvolvedor/Controller a tratar o cenário de falha de forma declarativa.
     - Preserva o uso de exceções apenas para erros verdadeiramente inesperados (ex: queda de banco de dados, falha de rede).
-  - **Negativas:**
+- **Negativas:**
     - Curva de aprendizado inicial para membros da equipe não familiarizados com programação funcional.

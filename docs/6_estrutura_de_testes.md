@@ -1,87 +1,88 @@
 # 6. PLANO DE QUALIDADE E TESTES DE SOFTWARE
 
----
+## 6.1 Estratégia
 
-## 6.1 Estratégia e Pirâmide de Testes
+O QuimiPort usará Vitest ou Jest no ecossistema Node.js/TypeScript. A maior parte da cobertura ficará no domínio, com testes rápidos e determinísticos; integrações confirmarão persistência e contratos; poucos E2E validarão jornadas críticas pela API.
 
-Para garantir a confiabilidade técnica e a aderência estrita às Regras de Negócio (`RN-PRQ`, `RN-CRQ`, `RN-RTC`, `RN-DOC`, `RN-INS`, `RN-ARM`), a estratégia de testes do **QuimiPort** baseia-se no ecossistema **TypeScript (Node.js)** utilizando **Vitest / Jest** como test runner.
+```text
+          / E2E \          jornadas críticas pela API
+         /-------\
+        /Integração\       casos de uso, repositórios e banco
+       /-----------\
+      /  Unitários  \      entidades, VOs, funções puras e estados
+```
 
-A arquitetura do projeto adota a clássica Pirâmide de Testes:
+O relógio será injetado nos casos que dependem de validade. Assim, testes de vencimento não dependem da data real da máquina.
 
-````text
-       / \
-      /   \     [ Testes E2E / Integration ] (10%) - Controllers & DB (Supertest)
-     /     \
-    /-------\   [ Testes de Casos de Uso ]  (30%) - Application Layer (Mocks/InMemory)
-   /         \
-  /-----------\ [ Testes Unitários/Domínio ] (60%) - Aggregates, Entities & VOs (Puros)
+## 6.2 Matriz regra de negócio → nível de teste
 
-## 6.2 Matriz de Cobertura de Testes Unitários (Exemplos de Cenários)
+Legenda: **X** = cobertura obrigatória; **—** = não agrega confiança proporcional nesta fase.
 
-| Domínio / Código | Objeto / Módulo | Cenário de Teste / Regra Validada | Resultado Esperado |
-| :--- | :--- | :--- | :--- |
-| **[RN-PRQ-03]** | `ClassificacaoRisco` (VO) | Tentar instanciar classe de risco inválida ou nula | Retornar erro de validação (`Left/DomainError`) |
-| **[RN-PRQ-05]** | `RegistrarCarga` (UC) | Associar um produto químico com status `INATIVO` a uma nova carga | Bloquear o registro e retornar falha de negócio |
-| **[RN-CRQ-03]** | `QuantidadeCarga` (VO) | Criar quantidade de carga com valor menor ou igual a zero | Lançar exceção/erro de domínio no VO |
-| **[RN-CRQ-07]** | `CargaQuimica` (Aggregate) | Tentar liberar carga com inspeção pendente ou reprovada | Impedir a transição do status para `LIBERADA` |
-| **[RN-CRQ-10]** | `CargaQuimica` (Aggregate) | Tentar movimentar uma carga com status `BLOQUEADA` | Lançar exceção de transição de estado inválida |
-| **[RN-CRQ-11]** | `CargaQuimica` (Aggregate) | Alterar status de uma carga que está `CANCELADA` | Lançar erro de estado terminal imutável |
-| **[RN-RTC-02]** | `CPF` (VO) | Validar algoritmo de CPF com dígitos verificadores incorretos | Retornar falha de CPF inválido |
-| **[RN-ARM-05]** | `AreaArmazenamento` (Entidade)| Alocar carga que excede a capacidade máxima do setor | Impedir a alocação e disparar erro `CapacidadeExcedidaError` |
+| Regras | Comportamento protegido | Unitário | Integração | E2E |
+| :--- | :--- | :---: | :---: | :---: |
+| RN-PRQ-01, RN-CRQ-01, RN-RTC-01, RN-DOC-01, RN-INS-01, RN-ARM-01 | Geração e persistência de identificadores | — | X | — |
+| RN-PRQ-02, RN-PRQ-03, RN-PRQ-04 | Nome, classificação de risco e estado inicial do produto | X | — | — |
+| RN-PRQ-05, RN-CRQ-02, RN-CRQ-08 | Produto inativo não entra em nova carga | X | X | X |
+| RN-PRQ-06 | Unicidade de nome e classe de risco | X | X | — |
+| RN-PRQ-07 | Inativação exige aprovação superior | X | X | X |
+| RN-CRQ-03 | Quantidade maior que zero | X | — | — |
+| RN-CRQ-04, RN-CRQ-05 | Carga inicia registrada e com responsável técnico | X | X | — |
+| RN-CRQ-06 | Associação de múltiplos documentos | X | X | — |
+| RN-CRQ-07 | Liberação exige inspeção aprovada | X | X | X |
+| RN-CRQ-09, RN-DOC-02, RN-DOC-03, RN-DOC-04, RN-DOC-05 | Checklist obrigatório, status documental e vigência calculada | X | X | X |
+| RN-CRQ-10 | Carga bloqueada não se movimenta nem é liberada | X | X | X |
+| RN-CRQ-11 | Carga cancelada é terminal | X | — | X |
+| RN-CRQ-12 | Registro retroativo exige aprovação superior | X | X | X |
+| RN-RTC-02, RN-RTC-03 | CPF e registro profissional válidos | X | — | — |
+| RN-INS-02, RN-INS-03, RN-INS-04 | Carga, data e inspetor obrigatórios na inspeção | X | X | — |
+| RN-ARM-02, RN-ARM-03, RN-ARM-04, RN-ARM-05 | Estado, carga, ocupação e capacidade da área | X | X | — |
 
----
+As jornadas E2E prioritárias são: registrar carga com produto ativo; rejeitar produto inativo; validar documentos e impedir documento vencido; registrar inspeção aprovada e liberar formalmente; bloquear carga e impedir movimentação; cancelar carga e impedir novas transições.
 
-## 6.3 Exemplo de Implementação de Teste Unitário em TypeScript (Jest / Vitest)
+## 6.3 Cenários unitários essenciais
 
-O exemplo abaixo ilustra o teste de transição de estado e validação da máquina de estados do Agregado `CargaQuimica`:
+| Regra | Cenário | Resultado |
+| :--- | :--- | :--- |
+| RN-PRQ-03 | Criar classificação com ONU inválido | `Left<ClassificacaoRiscoInvalidaError>` |
+| RN-CRQ-03 | Criar quantidade menor ou igual a zero | `Left<QuantidadeInvalidaError>` |
+| RN-DOC-05 | Documento validado com validade anterior ao relógio injetado | `estaVencido` retorna `true` e a liberação falha |
+| RN-CRQ-07 | Liberar com inspeção pendente ou reprovada | Estado permanece `EM_INSPECAO` ou `BLOQUEADA` |
+| RN-CRQ-09 | Liberar sem tipo obrigatório ou com documento rejeitado | `Left` específico e estado inalterado |
+| RN-CRQ-10 | Movimentar carga bloqueada | `Left<CargaBloqueadaError>` |
+| RN-CRQ-11 | Alterar carga cancelada | `Left<CargaCanceladaError>` |
+| RN-RTC-02 | Criar CPF com dígitos inválidos | `Left<CPFInvalidoError>` |
+| RN-ARM-05 | Alocar acima da capacidade | `Left<CapacidadeExcedidaError>` |
+
+## 6.4 Exemplo TypeScript
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { CargaQuimica } from '../../domain/aggregates/carga-quimica/carga-quimica.aggregate';
-import { StatusCarga } from '../../domain/aggregates/carga-quimica/status-carga.enum';
-import { DomainError } from '../../domain/errors/domain.error';
+import { describe, expect, it } from 'vitest';
 
-describe('CargaQuimica Aggregate - Regras de Liberação e Transição de Estado', () => {
-
-  it('deve impedir a liberação de uma carga sem a documentação obrigatória [RN-CRQ-09]', () => {
-    // Arrange: Criar carga com status inicial REGISTRADA
-    const carga = CargaQuimica.create({
-      produtoId: 'prod-uuid-123',
-      quantidade: 500,
-      responsavelTecnicoId: 'rtc-uuid-456'
+describe('liberação de carga', () => {
+  it('impede liberação quando um documento validado venceu [RN-CRQ-09, RN-DOC-05]', () => {
+    const agora = new Date('2026-08-16T12:00:00Z');
+    const carga = cargaEmInspecaoAprovada({
+      documento: documentoValidado({
+        dataValidade: new Date('2026-08-15T23:59:59Z'),
+      }),
     });
 
-    // Act: Tentar liberar sem anexar a documentação necessária
-    const resultado = carga.liberar();
+    const resultado = carga.liberar(agora);
 
-    // Assert: O resultado deve indicar falha (Left)
-    expect(resultado.isLeft()).toBe(true);
-    expect(resultado.value).toBeInstanceOf(DomainError);
-    expect(carga.status).toBe(StatusCarga.REGISTRADA);
-  });
-
-  it('não deve permitir alterar o status de uma carga CANCELADA [RN-CRQ-11]', () => {
-    // Arrange
-    const carga = CargaQuimica.create({
-      produtoId: 'prod-uuid-123',
-      quantidade: 500,
-      responsavelTecnicoId: 'rtc-uuid-456'
-    });
-
-    carga.cancelar('Cancelamento solicitado pelo cliente');
-
-    // Act
-    const resultado = carga.liberar();
-
-    // Assert: Estado terminal bloqueia transições
-    expect(resultado.isLeft()).toBe(true);
-    expect(carga.status).toBe(StatusCarga.CANCELADA);
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(DocumentoVencidoError);
+    }
+    expect(carga.status).toBe(StatusCarga.EM_INSPECAO);
   });
 });
-````
-6.4 Automação e Qualidade de Código (CI/CD)
-    1.Linter e Formatação: Uso do ESLint com regras estritas do TypeScript e Prettier para padronização de código.
+```
 
-    2.Hook de Commit (Husky): Validação automática de tipos (tsc --noEmit) e execução de testes unitários rápidos antes de autorizar qualquer git commit.
+O teste evidencia a decisão: `EXPIRADO` não é estado do documento; a vigência é calculada no momento da liberação.
 
-    3.Métrica de Cobertura (Code Coverage): Meta de mínimo de 85% de cobertura de linhas na camada de domain e application.
+## 6.5 Qualidade e automação
+
+- ESLint, Prettier e `tsc --noEmit` verificam padrão e contratos.
+- O pipeline executa unitários primeiro, depois integração e E2E.
+- A meta inicial é 85% de cobertura de linhas em `domain` e `application`, sem substituir a matriz de regras por uma métrica numérica.
+- Testes de integração usam banco isolado; testes E2E exercitam a API sem depender de serviços externos reais.
