@@ -71,19 +71,20 @@ src/
 │
 └── presentation/                         # Camada de Apresentação
     └── controllers/                      # Controllers da API REST
+```
 
+## 5.3 Recursos Avançados do TypeScript no Projeto
 
-5.3 Recursos Avançados do TypeScript no Projeto
     A aplicação utiliza os recursos do TypeScript para garantir a segurança de tipos e o cumprimento das invariantes de DDD:
 
     Interfaces Estritas para Contratos: O Domínio define interfaces (ICargaQuimicaRepository) garantindo que a aplicação dependa de abstrações, e   não de implementações de banco de dados.
 
-    Enums Nativos para Estado: A máquina de estados da carga utiliza enum StatusCarga (REGISTRADA, EM_ANALISE, EM_INSPECAO, LIBERADA, BLOQUEADA,    CANCELADA, FINALIZADA), impedindo valores inválidos em tempo de compilação.
+    Enums Nativos para Estado: A máquina de estados da carga utiliza enum StatusCarga (REGISTRADA, EM_ANALISE, EM_INSPECAO, LIBERADA, BLOQUEADA, CANCELADA, FINALIZADA), impedindo valores inválidos em tempo de compilação.
 
-    Value Objects Imutáveis com Getters Privados: Os Value Objects (CPF, ClassificacaoRisco) utilizam propriedades readonly e construtores privados     com métodos estáticos de fábrica (CPF.create()) para garantir imutabilidade.
+    Value Objects Imutáveis com Getters Privados: Os Value Objects (CPF, ClassificacaoRisco) utilizam propriedades readonly e construtores privados com métodos estáticos de fábrica (CPF.create()) para garantir imutabilidade.
 
     Tipagem Funcional com Tipo Result / Either: Tratamento de erros de domínio sem disparar exceções pesadas na call-stack, utilizando o tipo   Either<DomainError, SuccessResult>.
-```
+
 
 ## 5.4 Padrões de Design e Boas Práticas Aplicadas
 
