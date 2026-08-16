@@ -11,7 +11,6 @@ Sumário (TOC)
 - [2.6 Exemplos de Implementação (TypeScript)](#26-exemplos-de-implementacao-typescript)
 - [2.7 Testes e Validação (recomendações)](#27-testes-e-validacao-recomendacoes)
 - [2.8 Notas Arquiteturais e ADR (proposta)](#28-notas-arquiteturais-e-adr-proposta)
-- [2.9 Referências e Glossário](#29-referencias-e-glossario)
 
 ---
 
