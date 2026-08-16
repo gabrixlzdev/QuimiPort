@@ -273,18 +273,18 @@ export class CargaQuimica {
   inspecoes: any[] = [];
   // historicoStatus, dataCriacao, etc.
 
-  constructor(props: {
+  constructor(produtoQuimico: {
     id: string;
     codigoIdentificacao: CodigoIdentificacao;
     produtoQuimicoId: string;
     quantidade: QuantidadeCarga;
     responsavelTecnico?: ResponsavelTecnico;
   }) {
-    this.id = props.id;
-    this.codigoIdentificacao = props.codigoIdentificacao;
-    this.produtoQuimicoId = props.produtoQuimicoId;
-    this.quantidade = props.quantidade;
-    this.responsavelTecnico = props.responsavelTecnico;
+    this.id = produtoQuimico.id;
+    this.codigoIdentificacao = produtoQuimico.codigoIdentificacao;
+    this.produtoQuimicoId = produtoQuimico.produtoQuimicoId;
+    this.quantidade = produtoQuimico.quantidade;
+    this.responsavelTecnico = produtoQuimico.responsavelTecnico;
     this.status = StatusCarga.RASCUNHO;
   }
 
@@ -316,8 +316,6 @@ export class CargaQuimica {
 }
 ```
 
-Repositório e carregamento eventual: carregar `ProdutoQuimico` por `produtoQuimicoId` via `ProdutoQuimicoRepository` (consulta read-model) apenas quando necessário para validações que dependam do produto.
-
 ---
 
 ## 2.7 Testes e Validação (recomendações)
@@ -341,44 +339,21 @@ Testes de integração:
 - Simular leitura de `ProdutoQuimico` inativo que impede novo registro de carga.
 - Mock de repositório e verificação de publicação de eventos (event sourcing ou mensagens).
 
-Ferramentas sugeridas:
-- Jest para unit tests em TypeScript.
-- Sinon / jest mocks para repositórios e adaptadores externos.
-- Validadores (zod, class-validator) podem facilitar checagens nos DTOs/ports.
-
 ---
 
 ## 2.8 Notas Arquiteturais e ADR (proposta)
 
-Decisão proposta: `ProdutoQuimico` fora do agregado `CargaQuimica` (referenciado por `produtoQuimicoId`). Racional (SUGESTÃO — confirmar com o time / autor):
+Decisão proposta: `ProdutoQuimico` fora do agregado `CargaQuimica` (referenciado por `produtoQuimicoId`).
 - ProdutoQuimico é um catálogo com vida própria e atualizações independentes (nome, classificação), possivelmente compartilhado por múltiplos contextos e processos. Incluir este objeto dentro de `CargaQuimica` tornaria o agregado grande e sujeito a contenção e acoplamento.
 - Vantagens de mantê-lo fora:
   - Agregado `CargaQuimica` permanece pequeno e focado nas invariantes da operação da carga.
-  - Possibilidade de atualizar `ProdutoQuimico` independentemente, com estratégias de eventual consistency para propagar mudanças a visualizações/leitura.
-  - Melhor performance em operações concorrentes sobre cargas.
-- Quando considerar mover para dentro:
-  - Se `ProdutoQuimico` for imutável e intrinsecamente parte do ciclo de vida da carga (mudanças ao produto exigem transação com a carga), incluir pode ser justificável.
-
-Ação sugerida: criar um ADR formal em `docs/adr/` com esta proposta e aprová-lo no PR.
-
----
-
-## 2.9 Referências e Glossário
-
-- Glossário canônico do projeto: [docs/1_dominio.md](/gabrixlzdev/QuimiPort/blob/issue-6/docs/1_dominio.md) — usar como referência principal para termos ubiquos.
-- Recomendações:
-  - Centralizar enums em `src/domain/enums.ts`.
-  - Centralizar regex/validações em VOs e utilizá-los em DTOs/adapters.
-  - Documentar ADRs em `docs/adr/`.
 
 ---
 
 Notas finais
-- As convenções de nome escolhidas: Portuguese prose; ASCII-only identifiers; PascalCase para entidades; camelCase para campos; ENUMS em maiúsculas.  
+- As convenções de nome escolhidas: texto em Português; identificadores (números/códigos de id) ASCII-only; PascalCase para entidades; camelCase para campos; ENUMS em maiúsculas.  
 - Regex principais recap:
   - numeroONU: `^\d{4}$`  
   - codigoIdentificacao: `^[A-Za-z0-9]{8,20}$`  
   - registroConselho (preferido, case-insensitive): `^(?i)(CRQ|CREA)[\s-]?\d{3,7}$`  (alternativa sem `(?i)` para sua ferramenta: `^(CRQ|CREA)[\s-]?\d{3,7}$`)  
   - ufConselho (UFs BR): `^(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$`
-
-Se quiser, eu adapto esse conteúdo para seu estilo (ex.: mais/menos detalhes), gero os arquivos TypeScript reais (VOs/enums/aggregate skeleton) ou preparo um patch pronto para commit na branch `issue-6`. Quer que eu gere também os arquivos TS de exemplo aqui (em seguida), ou prefere revisar este documento primeiro?
