@@ -25,27 +25,66 @@ As dependências de código apontam para dentro. Um caso de uso não importa con
 
 ```text
 src/
-├── modules/
-│   ├── gestao-cargas/
-│   │   ├── domain/
-│   │   ├── application/
-│   │   ├── infrastructure/
-│   │   └── presentation/
-│   ├── catalogo-quimico/
-│   │   ├── domain/
-│   │   ├── application/
-│   │   ├── infrastructure/
-│   │   └── presentation/
-│   └── compliance/
-│       ├── domain/
-│       ├── application/
-│       ├── infrastructure/
-│       └── presentation/
-├── shared/
-│   ├── domain/either.ts
-│   └── infrastructure/
-└── main.ts
+├── domain/                               # Camada de Domínio (Core da Aplicação)
+│   ├── aggregates/                       # Agregados Principais
+│   │   └── carga-quimica/
+│   │       ├── carga-quimica.aggregate.ts# Raiz do Agregado (Aggregate Root)
+│   │       ├── status-carga.enum.ts      # Enum / State Machine de Status
+│   │       └── documento-carga.entity.ts # Entidade do Agregado [RN-DOC]
+│   ├── entities/                         # Entidades Independentes
+│   │   ├── produto-quimico.entity.ts     # Entidade de Produto [RN-PRQ]
+│   │   ├── responsavel-tecnico.entity.ts # Entidade de Responsável [RN-RTC]
+│   │   ├── inspecao.entity.ts           # Entidade de Inspeção [RN-INS]
+│   │   └── area-armazenamento.entity.ts  # Entidade de Armazenamento [RN-ARM]
+│   ├── value-objects/                    # Objetos de Valor Imutáveis
+│   │   ├── classificacao-risco.vo.ts     # Classe de risco / ONU [RN-PRQ-03]
+│   │   ├── quantidade-carga.vo.ts        # Quantidade e Unidade [RN-CRQ-03]
+│   │   ├── cpf.vo.ts                     # Validação de CPF [RN-RTC-02]
+│   │   └── registro-profissional.vo.ts   # CRQ/CREA [RN-RTC-03]
+│   ├── repositories/                     # Interfaces/Contratos (Sem implementação)
+│   │   ├── carga-quimica.repository.interface.ts
+│   │   ├── produto-quimico.repository.interface.ts
+│   │   └── area-armazenamento.repository.interface.ts
+│   └── errors/                           # Erros de Domínio Personalizados
+│       └── domain.error.ts
+│
+├── application/                          # Camada de Aplicação (Casos de Uso)
+│   ├── use-cases/                        # Implementação dos Casos de Uso
+│   │   ├── produtos/
+│   │   │   ├── cadastrar-produto.use-case.ts
+│   │   │   └── inativar-produto.use-case.ts
+│   │   ├── cargas/
+│   │   │   ├── registrar-carga.use-case.ts
+│   │   │   ├── validar-documentacao.use-case.ts
+│   │   │   ├── liberar-carga.use-case.ts
+│   │   │   └── bloquear-carga.use-case.ts
+│   │   └── inspecoes/
+│   │       └── realizar-inspecao.use-case.ts
+│   └── dtos/                             # Data Transfer Objects
+│       ├── carga-quimica.dto.ts
+│       └── produto-quimico.dto.ts
+│
+├── infrastructure/                       # Camada de Infraestrutura
+│   ├── database/                         # Persistência e Mapeamento
+│   │   └── repositories/                 # Implementação Concreta das Interfaces
+│   └── shared/                           # Padrão Either e Result Types
+│
+└── presentation/                         # Camada de Apresentação
+    └── controllers/                      # Controllers da API REST
 ```
+
+## 5.3 Recursos Avançados do TypeScript no Projeto
+
+    A aplicação utiliza os recursos do TypeScript para garantir a segurança de tipos e o cumprimento das invariantes de DDD:
+
+    Interfaces Estritas para Contratos: O Domínio define interfaces (ICargaQuimicaRepository) garantindo que a aplicação dependa de abstrações, e   não de implementações de banco de dados.
+
+    Enums Nativos para Estado: A máquina de estados da carga utiliza enum StatusCarga (REGISTRADA, EM_ANALISE, EM_INSPECAO, LIBERADA, BLOQUEADA, CANCELADA, FINALIZADA), impedindo valores inválidos em tempo de compilação.
+
+    Value Objects Imutáveis com Getters Privados: Os Value Objects (CPF, ClassificacaoRisco) utilizam propriedades readonly e construtores privados com métodos estáticos de fábrica (CPF.create()) para garantir imutabilidade.
+
+    Tipagem Funcional com Tipo Result / Either: Tratamento de erros de domínio sem disparar exceções pesadas na call-stack, utilizando o tipo   Either<DomainError, SuccessResult>.
+
 
 O diretório `shared` contém apenas elementos realmente transversais. Regras específicas permanecem no módulo proprietário. Imports entre módulos passam pelas APIs públicas de aplicação, nunca pelas entidades internas nem por tabelas.
 

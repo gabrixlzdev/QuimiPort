@@ -38,7 +38,7 @@ Acesse os documentos detalhados de cada módulo da solução:
 4. [⚖️ Regras de Negócio](docs/4_regras_de_negocio.md)
    * Levantamento e alocação arquitetural das regras (RN-001 à RN-015).
 5. [🏛️ Arquitetura e Design Técnico](docs/5_arquitetura.md)
-   * Clean Architecture, estrutura de pastas, exemplos TypeScript, ADRs e Roadmap.
+   * Clean Architecture, estrutura de pastas, exemplos TypeScript e ADRs.
 6. [🧪 Plano de Qualidade e Testes](docs/6_estrutura_de_testes.md)
    * Pirâmide de testes e matriz de cenários de teste do domínio.
 7. [📝 Decisões Arquiteturais](docs/7_decisoes_arquiteturais.md)

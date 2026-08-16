@@ -3,7 +3,7 @@
 ---
 
 ## 1.1 Contexto
-O ecossistema portuário brasileiro, exemplificado pelas operações do Porto de Santos — o maior complexo portuário da América Latina —, lida diariamente com a movimentação de milhões de toneladas de mercadorias. Dentre esses fluxos, o transporte, o transbordo e o armazenamento de produtos e cargas químicas representam operações de altíssima complexidade e criticidade regulatória.
+O ecossistema portuário brasileiro, exemplificado pelas operações do Porto de Santos (o maior complexo portuário da América Latina), lida diariamente com a movimentação de milhões de toneladas de mercadorias. Dentre esses fluxos, o transporte, o transbordo e o armazenamento de produtos e cargas químicas representam operações de altíssima complexidade e criticidade regulatória.
 
 A gestão inadequada dessas cargas pode resultar em acidentes ambientais severos, contaminação de águas e solos, incêndios, explosões e penalidades regulatórias por parte de órgãos como ANTAQ, IBAMA, Anvisa e Capitania dos Portos.
 
@@ -28,7 +28,7 @@ O **QuimiPort** é uma solução de software orientada ao domínio logístico-po
 ### Escopo da Fase 1 (Atual)
 A **Fase 1** contempla o desenho arquitetural, a modelagem de domínio com Domain-Driven Design (DDD), a especificação de regras de negócio, casos de uso, transições de estado, estratégias de testes e a estruturação do projeto em TypeScript com Clean Architecture.
 
-> **Importante:** Em estrita conformidade com os requisitos do Tech Challenge — Fase 1, **nenhum código de infraestrutura, banco de dados, frontend ou API REST foi implementado de forma definitiva**. Esta documentação apresenta o *blueprint* arquitetural e teórico que sustentará a implementação nas fases subsequentes.
+> **Importante:** Em estrita conformidade com os requisitos do Tech Challenge - Fase 1, **nenhum código de infraestrutura, banco de dados, frontend ou API REST foi implementado de forma definitiva**. Esta documentação apresenta o *blueprint* arquitetural e teórico que sustentará a implementação nas fases subsequentes.
 
 ### Escopo Futuro
 * **Fase 2:** Implementação do ecossistema Backend em Node.js/TypeScript, persistência de dados transacional, API RESTful e autenticação/autorização por perfis.
