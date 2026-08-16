@@ -41,6 +41,8 @@ Acesse os documentos detalhados de cada módulo da solução:
    * Clean Architecture, estrutura de pastas, exemplos TypeScript e ADRs.
 6. [🧪 Plano de Qualidade e Testes](docs/6_estrutura_de_testes.md)
    * Pirâmide de testes e matriz de cenários de teste do domínio.
+7. [📝 Decisões Arquiteturais](docs/7_decisoes_arquiteturais.md)
+   * Registro das decisões, alternativas e consequências arquiteturais.
 
 ---
 
