@@ -28,7 +28,7 @@ flowchart LR
   UC2 -->|Saída Esperada| S2([Produto atualizado - status INATIVO])
   UC3 -->|Saída Esperada| S3([Carga criada - status REGISTRADA])
   UC4 -->|Saída Esperada| S4([Documento anexado - carga em EM_ANALISE])
-  UC5 -->|Saída Esperada| S5([Parecer registrado - LIBERADA ou BLOQUEADA])
+  UC5 -->|Saída Esperada| S5([Parecer registrado - EM_INSPECAO ou BLOQUEADA])
   UC6 -->|Saída Esperada| S6([Carga com status LIBERADA])
   UC7 -->|Saída Esperada| S7([Carga com status BLOQUEADA ou em reanálise])
   UC8 -->|Saída Esperada| S8([Listagem de cargas + histórico de status])
@@ -106,11 +106,11 @@ flowchart LR
   2. O documento é criado com ID automático e status inicial `PENDENTE` (RN-DOC-01, RN-DOC-02, RN-DOC-03).
   3. O sistema valida a data de validade do documento em relação à data atual (RN-DOC-04).
   4. A carga vincula os documentos recebidos (RN-CRQ-06) e altera seu status para `EM_ANALISE`.
-  5. Se algum documento obrigatório estiver vencido ou inválido, a documentação é rejeitada e a carga fica sujeita a bloqueio.
+  5. O vencimento é calculado por `dataValidade < agora`; `EXPIRADO` não é persistido como status. Se algum documento obrigatório estiver vencido, pendente ou rejeitado, a carga não avança para inspeção e pode ser bloqueada.
 - **Regras de Negócio Relacionadas:** RN-CRQ-06, RN-DOC-01, RN-DOC-02, RN-DOC-03, RN-DOC-04.
 - **Possíveis Erros ou Exceções:**
   - Inserção de documento sem tipo ou sem data de validade preenchida.
-  - Anexo de documento com data de validade expirada (documento é marcado como inválido/rejeitado).
+  - Anexo de documento com data de validade vencida (o cadastro pode ser preservado para auditoria, mas o documento não satisfaz o checklist de liberação).
 
 ---
 
@@ -119,11 +119,11 @@ flowchart LR
 - **Objetivo:** Registrar a vistoria física no pátio e o parecer do inspetor quanto à integridade da carga química.
 - **Ator Principal:** Analista de Qualidade / Inspetor.
 - **Entrada Esperada:** `cargaId`, `inspetorId`, `parecerVistoria` (`APROVADO` ou `REPROVADO`), `observacoesTecnicas`.
-- **Saída Esperada:** Parecer gravado e status da carga atualizado (`LIBERADA` ou `BLOQUEADA`).
+- **Saída Esperada:** Parecer gravado; a carga permanece `EM_INSPECAO` quando aprovada, aguardando a liberação formal do UC-006, ou vai para `BLOQUEADA` quando reprovada.
 - **Fluxo Principal:**
   1. O sistema altera o status da carga para `EM_INSPECAO`.
   2. O inspetor realiza a vistoria presencial e registra o laudo final.
-  3. Se o laudo for `APROVADO` e a documentação estiver ok, a carga avança no fluxo.
+  3. Se o laudo for `APROVADO`, o parecer fica disponível para o UC-006; a inspeção não libera a carga automaticamente.
   4. Se a vistoria for `REPROVADA` (vazamentos, avarias em embalagens), a carga transiciona para `BLOQUEADA` (RN-CRQ-10).
   5. A vistoria de inspeção deve ser obrigatoriamente concluída antes que a carga possa ser liberada (RN-CRQ-07).
 - **Regras de Negócio Relacionadas:** RN-CRQ-07, RN-CRQ-10.
@@ -140,7 +140,7 @@ flowchart LR
 - **Saída Esperada:** Carga atualizada para o status `LIBERADA` no sistema.
 - **Fluxo Principal:**
   1. O gestor solicita a liberação da carga química.
-  2. O sistema verifica se a documentação obrigatória foi validada e aprovada (RN-CRQ-09).
+  2. O sistema verifica, no instante da decisão, se toda a documentação obrigatória está validada, aprovada e não vencida (RN-CRQ-09, RN-DOC-05).
   3. O sistema verifica se a inspeção técnica de pátio foi finalizada com sucesso (RN-CRQ-07).
   4. O sistema confirma que a carga não possui bloqueios vigentes ou cancelamento (RN-CRQ-10, RN-CRQ-11).
   5. O status da carga é alterado para `LIBERADA`.
@@ -200,7 +200,7 @@ stateDiagram-v2
     EM_ANALISE --> BLOQUEADA: Falha / Inconformidade Documental
     EM_ANALISE --> CANCELADA: Cancelar Operação
 
-    EM_INSPECAO --> LIBERADA: Inspeção Finalizada e Aprovada
+    EM_INSPECAO --> LIBERADA: Gestor libera após inspeção aprovada
     EM_INSPECAO --> BLOQUEADA: Inspeção Reprovada
 
     BLOQUEADA --> EM_ANALISE: Desbloqueio para Nova Análise
@@ -220,7 +220,7 @@ stateDiagram-v2
 | **Nenhum**        | `RegistrarCarga`      | `REGISTRADA`   | Produto deve estar `ATIVO` (RN-CRQ-02), quantidade > 0 (RN-CRQ-03) e responsável técnico associado (RN-CRQ-05). |
 | **`REGISTRADA`**  | `AnexarDocumento`     | `EM_ANALISE`   | Permite vincular uma ou mais documentações (RN-CRQ-06).                                                         |
 | **`EM_ANALISE`**  | `ValidarDocumentos`   | `EM_INSPECAO`  | Documentação obrigatória deve estar completa e com validade em dia (RN-CRQ-09, RN-DOC-04).                      |
-| **`EM_INSPECAO`** | `ConcluirInspecao`    | `LIBERADA`     | Inspeção deve ser finalizada com parecer aprovado (RN-CRQ-07) e sem pendências documentais (RN-CRQ-09).         |
+| **`EM_INSPECAO`** | `LiberarCarga`         | `LIBERADA`     | Inspeção aprovada (RN-CRQ-07) e documentos obrigatórios validados e não vencidos no instante da liberação (RN-CRQ-09, RN-DOC-05). |
 | **`EM_INSPECAO`** | `ReprovarInspecao`    | `BLOQUEADA`    | Parecer técnico reprovado coloca a carga em bloqueio operacional (RN-CRQ-10).                                   |
 | **`BLOQUEADA`**   | `ResolverPendencia`   | `EM_ANALISE`   | Cargas bloqueadas não podem entrar em movimentação (RN-CRQ-10). Exige aprovação para retorno.                   |
 | **`LIBERADA`**    | `FinalizarOperacao`   | `FINALIZADA`   | Movimentação concluída com sucesso no pátio.                                                                    |

@@ -70,6 +70,7 @@ A **Fase 1** contempla o desenho arquitetural, a modelagem de domínio com Domai
 | **Classe de Risco** | Categorização oficial da ANTT/IMDG baseada na periculosidade da substância (Ex.: Classe 3 - Líquidos Inflamáveis, Classe 8 - Corrosivos). |
 | **Código ONU** | Número de quatro dígitos que identifica internacionalmente substâncias perigosas segundo a Organização das Nações Unidas (Ex.: UN 1830 para Ácido Sulfúrico). |
 | **Documento Obrigatório** | Registro documental exigido por lei ou norma portuária para autorizar o trânsito da carga (ex.: FDS/FISPQ, Declaração de Cargas Perigosas, Licença Ambiental). |
+| **Documento Vencido** | Documento cuja `dataValidade` é anterior ao instante da verificação. `EXPIRADO` não é armazenado como status: o vencimento é calculado para evitar estado duplicado ou desatualizado. |
 | **Responsável Técnico** | Profissional de Química ou Engenharia devidamente registrado no conselho de classe (CRQ/CREA) responsável pelas diretrizes de segurança da carga. |
 | **Inspeção** | Procedimento de vistoria física e verificação preventiva realizado na carga para checar lacres, vazamentos, rotulagem e conformidade da embalagem. |
 | **Liberação** | Ação formal que altera o estado da Carga Química para autorizar sua movimentação física ou desembarque do terminal. |

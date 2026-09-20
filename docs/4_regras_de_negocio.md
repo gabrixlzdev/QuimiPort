@@ -28,9 +28,9 @@
 | **RN-CRQ-06** | Toda carga química pode ser associada a mais de uma documentação. | Domínio / Agregado | Coleção `List<DocumentoCarga>` interna do Agregado. |
 | **RN-CRQ-07** | Toda carga química em inspeção deve ser finalizada antes de ser liberada. | Domínio / Máquina Estado | Método `liberar()` valida se o status de inspeção é final. |
 | **RN-CRQ-08** | Toda carga química não pode ser registrada com um produto químico inativo. | Aplicação / Use Case | Verificação do estado do `ProdutoQuimico` no Use Case. |
-| **RN-CRQ-09** | Uma carga química não pode ser liberada sem a documentação obrigatória. | Domínio / Agregado | Validação do checklist de documentos em `liberar()`. |
+| **RN-CRQ-09** | Uma carga química não pode ser liberada sem toda a documentação obrigatória validada e vigente. | Domínio / Agregado | Validação do checklist e da vigência em `liberar(agora)`. |
 | **RN-CRQ-10** | Uma carga química bloqueada não pode entrar em movimentação. | Domínio / Máquina Estado | Bloqueio de métodos de transição no status `BLOQUEADA`. |
-| **RN-CRQ-11** | Uma carga química cancelada não pode ter seu status alterado. | Domínio / Máquina Estado | Estado Terminal: lança exceção em qualquer transição. |
+| **RN-CRQ-11** | Uma carga química cancelada não pode ter seu status alterado. | Domínio / Máquina Estado | Estado terminal: retorna `Left<CargaCanceladaError>` em qualquer transição. |
 | **RN-CRQ-12** | Registro de carga com data retroativa exige aprovação de cargo superior. | Aplicação / Policy | Policy de liberação/aprovação de registro retroativo. |
 
 ---
@@ -51,6 +51,7 @@
 | **RN-DOC-02** | Todo documento de carga é criado com o status automaticamente definido como 'Pendente'. | Domínio / Entidade | Estado inicial no construtor do `DocumentoCarga`. |
 | **RN-DOC-03** | Todo documento de carga deve ser cadastrado com um tipo de documento associado. | Domínio / Entidade | Enum de Tipos de Documento (FDS, FISPQ, Laudo). |
 | **RN-DOC-04** | Todo documento de carga deve ser cadastrado com uma data de validade. | Domínio / Entidade | Validação da presença e consistência da `dataValidade`. |
+| **RN-DOC-05** | Um documento com `dataValidade` anterior ao instante da verificação não pode atender ao checklist de liberação. | Domínio / Entidade e Agregado | `estaVencido(agora)` calcula a vigência; `EXPIRADO` não integra `StatusValidacao`, evitando estado persistido redundante. |
 
 ---
 
@@ -59,7 +60,7 @@
 | :--- | :--- | :--- | :--- |
 | **RN-INS-01** | Toda inspeção recebe um ID definido automaticamente. | Infraestrutura / DB | Gerado via UUIDv4 / Identity DB. |
 | **RN-INS-02** | Toda inspeção deve ser cadastrada com uma carga química associada. | Domínio / Entidade | Chave/Referência obrigatória para `CargaQuimica`. |
-| **RN-INS-03** | Toda inspeção deve ter a data definida automaticamente pelo sistema no resultado. | Aplicação / Use Case | `DateTime.UtcNow` gravado no lançamento do parecer. |
+| **RN-INS-03** | Toda inspeção deve ter a data definida automaticamente pelo sistema no resultado. | Aplicação / Use Case | `Clock.now()` injetado e gravado no lançamento do parecer. |
 | **RN-INS-04** | Toda inspeção deve ter o Inspetor Responsável definido no resultado. | Domínio / Entidade | Atribuição obrigatória do ID/Nome do Inspetor no laudo. |
 
 ---

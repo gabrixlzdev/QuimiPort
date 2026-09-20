@@ -25,7 +25,7 @@ classDiagram
         -CodigoIdentificacao codigoIdentificacao
         -ProdutoQuimicoId produtoQuimicoId
         -QuantidadeCarga quantidade
-        -ResponsavelTecnico responsavelTecnico
+        -ResponsavelTecnicoId responsavelTecnicoId
         -StatusCarga status
         -List~DocumentoCarga~ documentos
         -List~Inspecao~ inspecoes
@@ -55,7 +55,7 @@ classDiagram
         -Date dataValidade
         -StatusValidacao statusValidacao
         +validar()
-        +estaVencido() boolean
+        +estaVencido(agora) boolean
     }
 
     class InspecaoEntity {
@@ -81,7 +81,8 @@ classDiagram
         -UnidadeMedida unidade
     }
 
-    class ResponsavelTecnicoVO {
+    class ResponsavelTecnicoEntity {
+        -ResponsavelTecnicoId id
         -string nome
         -string registroConselho
         -string ufConselho
@@ -91,7 +92,7 @@ classDiagram
     CargaQuimicaAggregateRoot "1" *-- "many" DocumentoCargaEntity : contem
     CargaQuimicaAggregateRoot "1" *-- "many" InspecaoEntity : contem
     CargaQuimicaAggregateRoot "1" *-- "1" QuantidadeCargaVO : possui
-    CargaQuimicaAggregateRoot "1" *-- "1" ResponsavelTecnicoVO : possui
+    CargaQuimicaAggregateRoot ..> ResponsavelTecnicoEntity : referencia por ResponsavelTecnicoId
     CargaQuimicaAggregateRoot ..> ProdutoQuimicoEntity : referencia por ProdutoQuimicoId
     ProdutoQuimicoEntity "1" *-- "1" ClassificacaoRiscoVO : possui
 ```
@@ -319,6 +320,32 @@ export class CargaQuimica {
 
 ## 2.7 Testes e Validação (recomendações)
 
+    Coerência de Responsabilidade Técnica: Nenhuma carga é transicionada para REGISTRADA ou etapas subsequentes sem um `ResponsavelTecnicoId` associado e válido.
+
+    Limites do Agregado e Decisão Arquitetural:
+    As entidades ProdutoQuimico e ResponsavelTecnico NÃO fazem parte do agregado CargaQuimica. O agregado mantém apenas referências por identificador. Isso evita um agregado gigante e reduz o acoplamento.
+
+## 2.5 Bounded Contexts e Relacionamentos
+
+Cada Bounded Context possui linguagem, modelo e serviços de aplicação próprios; a integração ocorre por contratos explícitos, sem acesso direto às tabelas ou entidades internas de outro contexto.
+
+| Bounded Context | Responsabilidade | Modelo principal | Contrato oferecido |
+| :--- | :--- | :--- | :--- |
+| **Gestão de Cargas** | Registro, ciclo de vida, inspeção, bloqueio e liberação | `CargaQuimica`, `Inspecao`, `QuantidadeCarga` | Casos de uso de registro, inspeção e transição de estado |
+| **Catálogo Químico** | Cadastro, classificação de risco e ativação de produtos | `ProdutoQuimico`, `ClassificacaoRisco` | Consulta de produto ativo por `ProdutoQuimicoId` |
+| **Compliance** | Documentos obrigatórios, validade, responsabilidade técnica e parecer de conformidade | `DocumentoCarga`, `ResponsavelTecnico`, checklist documental | Parecer de elegibilidade documental por carga |
+
+```mermaid
+flowchart LR
+    GC[Gestão de Cargas]
+    CQ[Catálogo Químico]
+    CO[Compliance]
+    GC -->|consulta produto ativo por ID| CQ
+    GC -->|solicita parecer documental| CO
+    CO -->|retorna elegibilidade e motivos| GC
+```
+
+Gestão de Cargas é o contexto consumidor (*downstream*). Catálogo Químico e Compliance são fornecedores (*upstream*) por interfaces definidas na camada de aplicação.
 Recomenda-se cobertura de testes unitários e alguns testes de integração para invariantes:
 
 Testes unitários sugeridos:
