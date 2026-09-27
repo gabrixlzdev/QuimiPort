@@ -41,14 +41,14 @@ flowchart LR
 
 - **Objetivo:** Manter um catálogo atualizado e seguro dos produtos químicos que circulam no porto, permitindo o registro de novos itens para associação com futuras cargas.
 - **Ator Principal:** Gestor Operacional / Administrador.
-- **Entrada Esperada:** `nomeComercial`, `nomeTecnico`, `classeRisco`, `subclasse`, `numeroONU`, `grupoEmbalagem`.
-- **Saída Esperada:** Mensagem de sucesso e produto químico disponível no sistema no status `ATIVO`.
+- **Entrada Esperada:** `nome`, `descricao`, `grupoCompatibilidade`, `classeRisco`, `subclasse`, `numeroONU`, `grupoEmbalagem`, `dataAtualizacao`.
+- **Saída Esperada:** Mensagem de sucesso, produto químico disponível no sistema no status `ATIVO` e com os campos `nome`, `descricao`, `grupoCompatibilidade` e `dataAtualizacao` persistidos corretamente.
 - **Fluxo Principal:**
   1. O ator informa os dados cadastrais do produto químico.
-  2. O sistema valida se o nome comercial e a descrição técnica foram preenchidos (RN-PRQ-02).
+  2. O sistema valida se o nome e a descrição do produto foram preenchidos e se o grupo de compatibilidade foi informado (RN-PRQ-02).
   3. O sistema verifica se já existe um produto com o mesmo nome e classe de risco (RN-PRQ-06).
   4. O sistema valida o código ONU com 4 dígitos e a classificação de risco (RN-PRQ-03).
-  5. O produto é salvo com ID gerado automaticamente e status `ATIVO` (RN-PRQ-01, RN-PRQ-04).
+  5. O produto é salvo com ID gerado automaticamente, `dataAtualizacao` registrada e status `ATIVO` (RN-PRQ-01, RN-PRQ-04).
 - **Regras de Negócio Relacionadas:** RN-PRQ-01, RN-PRQ-02, RN-PRQ-03, RN-PRQ-04, RN-PRQ-06.
 - **Possíveis Erros ou Exceções:**
   - Tentativa de cadastrar produto com campos obrigatórios em branco (sistema bloqueia).
@@ -78,15 +78,15 @@ flowchart LR
 
 - **Objetivo:** Efetuar o registro inicial de um lote/contêiner de carga química que chega ao terminal portuário.
 - **Ator Principal:** Operador Portuário / Gestor Operacional.
-- **Entrada Esperada:** `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnicoId`, `dataRegistro`.
-- **Saída Esperada:** Mensagem de sucesso e carga registrada no sistema com status inicial `REGISTRADA` (Aguardando Documentação).
+- **Entrada Esperada:** `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnicoId`, `origem`, `destino`, `dataEntrada`, `grupoCompatibilidade`.
+- **Saída Esperada:** Mensagem de sucesso, carga registrada no sistema com status inicial `REGISTRADA` (Aguardando Documentação) e com os campos de origem, destino, data de entrada e grupo de compatibilidade persistidos corretamente.
 - **Fluxo Principal:**
-  1. O operador informa os dados da carga, data e seleciona o produto e responsável técnico.
-  2. O sistema verifica se a data de registro é retroativa (anterior a hoje); se for, exige aprovação superior (RN-CRQ-12).
-  3. O sistema valida se o produto químico associado está `ATIVO` (RN-CRQ-02, RN-CRQ-08).
+  1. O operador informa os dados da carga, a origem, o destino, a data de entrada e seleciona o produto e responsável técnico.
+  2. O sistema verifica se a data de entrada é retroativa (anterior a hoje); se for, exige aprovação superior (RN-CRQ-12).
+  3. O sistema valida se o produto químico associado está `ATIVO` e se o grupo de compatibilidade da carga coincide com o do produto (RN-CRQ-02, RN-CRQ-08).
   4. O sistema valida se a quantidade informada é maior que zero (RN-CRQ-03).
-  5. O sistema valida a presença de um responsável técnico (RN-CRQ-05).
-  6. A carga é criada com ID automático e status inicial `REGISTRADA` (RN-CRQ-01, RN-CRQ-04).
+  5. O sistema valida a presença de um responsável técnico e dos campos de origem/destino obrigatórios (RN-CRQ-05).
+  6. A carga é criada com ID automático, `dataEntrada` registrada e status inicial `REGISTRADA` (RN-CRQ-01, RN-CRQ-04).
 - **Regras de Negócio Relacionadas:** RN-CRQ-01, RN-CRQ-02, RN-CRQ-03, RN-CRQ-04, RN-CRQ-05, RN-CRQ-08, RN-CRQ-12.
 - **Possíveis Erros ou Exceções:**
   - Tentativa de registrar carga sem produto químico associado ou com produto inativo (operação bloqueada).
@@ -191,37 +191,55 @@ flowchart LR
 
 ```mermaid
 stateDiagram-v2
-    [*] --> REGISTRADA: Registrar Carga (Status Inicial)
+    [*] --> AGUARDANDO_DOCUMENTACAO: Registro da Carga
 
-    REGISTRADA --> EM_ANALISE: Anexar Documentos de Carga
-    REGISTRADA --> CANCELADA: Cancelar Registro
+    AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
+    AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
+    AGUARDANDO_DOCUMENTACAO --> BLOQUEADA: Bloqueio Preventivo
 
-    EM_ANALISE --> EM_INSPECAO: Documentação Obrigatória Validada
-    EM_ANALISE --> BLOQUEADA: Falha / Inconformidade Documental
-    EM_ANALISE --> CANCELADA: Cancelar Operação
+    DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
+    DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
+    DOCUMENTACAO_VALIDADA --> BLOQUEADA: Bloqueio Preventivo
 
-    EM_INSPECAO --> LIBERADA: Gestor libera após inspeção aprovada
-    EM_INSPECAO --> BLOQUEADA: Inspeção Reprovada
+    EM_INSPECAO --> LIBERADA: Parecer Favorável
+    EM_INSPECAO --> CANCELADA: Cancelamento
+    EM_INSPECAO --> BLOQUEADA: Irregularidade na Inspeção
 
-    BLOQUEADA --> EM_ANALISE: Desbloqueio para Nova Análise
-    BLOQUEADA --> CANCELADA: Cancelamento da Carga Irregular
+    LIBERADA --> EM_MOVIMENTACAO: Início do Transporte
+    LIBERADA --> CANCELADA: Cancelamento
+    LIBERADA --> BLOQUEADA: Interdição Operacional
 
-    LIBERADA --> FINALIZADA: Concluir Operação / Saída do Terminal
-    LIBERADA --> BLOQUEADA: Bloqueio Preventivo de Emergência
+    EM_MOVIMENTACAO --> FINALIZADA: Conclusão Operacional
+    EM_MOVIMENTACAO --> CANCELADA: Cancelamento
+    EM_MOVIMENTACAO --> BLOQUEADA: Interdição na Movimentação
 
-    CANCELADA --> [*]
+    BLOQUEADA --> CANCELADA: Cancelamento Definitivo (Fase 2)
+
     FINALIZADA --> [*]
+    CANCELADA --> [*]
 ```
 
 ## 3.4 Matriz Consolidada de Transição de Status e Validações
 
-| Status Atual      | Ação / Evento Trigger | Próximo Status | Invariantes e Regras de Validação Exigidas                                                                      |
-| :---------------- | :-------------------- | :------------- | :-------------------------------------------------------------------------------------------------------------- |
-| **Nenhum**        | `RegistrarCarga`      | `REGISTRADA`   | Produto deve estar `ATIVO` (RN-CRQ-02), quantidade > 0 (RN-CRQ-03) e responsável técnico associado (RN-CRQ-05). |
-| **`REGISTRADA`**  | `AnexarDocumento`     | `EM_ANALISE`   | Permite vincular uma ou mais documentações (RN-CRQ-06).                                                         |
-| **`EM_ANALISE`**  | `ValidarDocumentos`   | `EM_INSPECAO`  | Documentação obrigatória deve estar completa e com validade em dia (RN-CRQ-09, RN-DOC-04).                      |
-| **`EM_INSPECAO`** | `LiberarCarga`         | `LIBERADA`     | Inspeção aprovada (RN-CRQ-07) e documentos obrigatórios validados e não vencidos no instante da liberação (RN-CRQ-09, RN-DOC-05). |
-| **`EM_INSPECAO`** | `ReprovarInspecao`    | `BLOQUEADA`    | Parecer técnico reprovado coloca a carga em bloqueio operacional (RN-CRQ-10).                                   |
-| **`BLOQUEADA`**   | `ResolverPendencia`   | `EM_ANALISE`   | Cargas bloqueadas não podem entrar em movimentação (RN-CRQ-10). Exige aprovação para retorno.                   |
-| **`LIBERADA`**    | `FinalizarOperacao`   | `FINALIZADA`   | Movimentação concluída com sucesso no pátio.                                                                    |
-| **`CANCELADA`**   | _Qualquer ação_       | _Nenhum_       | **ESTADO TERMINAL:** Uma carga cancelada não pode ter seu status alterado (RN-CRQ-11).                          |
+| Status Atual | Ação / Evento Trigger | Próximo Status | Invariantes e Regras de Validação Exigidas |
+| :----------- | :-------------------- | :------------- | :----------------------------------------- |
+| **`AGUARDANDO_DOCUMENTACAO`** | `ValidarDocumentos` | `DOCUMENTACAO_VALIDADA` | Documentação obrigatória e dados do registro devem estar consistentes para avançar. |
+| **`AGUARDANDO_DOCUMENTACAO`** | `CancelarCarga` | `CANCELADA` | Cancelamento permitido enquanto a carga ainda não finalizou etapa operacional. |
+| **`AGUARDANDO_DOCUMENTACAO`** | `BloquearCarga` | `BLOQUEADA` | Bloqueio preventivo pode ocorrer quando há pendências operacionais ou risco de irregularidade. |
+| **`DOCUMENTACAO_VALIDADA`** | `SolicitarInspecao` | `EM_INSPECAO` | A carga deve ter documentação válida e sem pendências antes da inspeção. |
+| **`DOCUMENTACAO_VALIDADA`** | `CancelarCarga` | `CANCELADA` | Cancelamento válido quando a operação é abortada após validação documental. |
+| **`DOCUMENTACAO_VALIDADA`** | `BloquearCarga` | `BLOQUEADA` | Interdição operacional ou risco documental pode bloquear a carga antes da inspeção. |
+| **`EM_INSPECAO`** | `LiberarCarga` | `LIBERADA` | Parecer de inspeção favorável e condições operacionais atendidas. |
+| **`EM_INSPECAO`** | `CancelarCarga` | `CANCELADA` | Cancelamento permitido quando a carga deixa de ser viável após inspeção. |
+| **`EM_INSPECAO`** | `BloquearCarga` | `BLOQUEADA` | Irregularidade técnica ou operacional provoca bloqueio imediato. |
+| **`LIBERADA`** | `IniciarMovimentacao` | `EM_MOVIMENTACAO` | A carga já foi liberada e segue para transporte ou embarque. |
+| **`LIBERADA`** | `CancelarCarga` | `CANCELADA` | Cancelamento válido antes da conclusão da movimentação. |
+| **`LIBERADA`** | `BloquearCarga` | `BLOQUEADA` | Interdição preventiva deve bloquear a carga e impedir continuidade da operação. |
+| **`EM_MOVIMENTACAO`** | `ConcluirOperacao` | `FINALIZADA` | Conclusão operacional do ciclo de transporte/desembarque. |
+| **`EM_MOVIMENTACAO`** | `CancelarCarga` | `CANCELADA` | Cancelamento válido durante a movimentação, se a operação for interrompida. |
+| **`EM_MOVIMENTACAO`** | `BloquearCarga` | `BLOQUEADA` | Interdição na movimentação exige bloqueio e sinal de risco operacional. |
+| **`BLOQUEADA`** | `CancelarCarga` | `CANCELADA` | **Fase 2:** a única saída permitida do bloqueio é o cancelamento definitivo. |
+| **`FINALIZADA`** | _Qualquer ação_ | _Nenhum_ | **ESTADO TERMINAL:** não aceita nenhuma transição posterior. |
+| **`CANCELADA`** | _Qualquer ação_ | _Nenhum_ | **ESTADO TERMINAL:** não aceita nenhuma transição posterior. |
+
+> Regras de validação: a máquina de estados do QuimiPort aceita apenas as 16 transições acima. Qualquer outro caminho deve ser rejeitado explicitamente como transição inválida. O desbloqueio operacional de cargas fica postergado para a Fase 3; na Fase 2, `BLOQUEADA` somente pode evoluir para `CANCELADA`. 

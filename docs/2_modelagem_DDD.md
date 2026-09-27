@@ -26,6 +26,10 @@ classDiagram
         -ProdutoQuimicoId produtoQuimicoId
         -QuantidadeCarga quantidade
         -ResponsavelTecnicoId responsavelTecnicoId
+        -string origem
+        -string destino
+        -Date dataEntrada
+        -string grupoCompatibilidade
         -StatusCarga status
         -List~DocumentoCarga~ documentos
         -List~Inspecao~ inspecoes
@@ -39,8 +43,10 @@ classDiagram
 
     class ProdutoQuimicoEntity {
         -ProdutoQuimicoId id
-        -string nomeComercial
-        -string nomeTecnico
+        -string nome
+        -string descricao
+        -string grupoCompatibilidade
+        -Date dataAtualizacao
         -ClassificacaoRisco classificacaoRisco
         -boolean ativo
         +inativar()
@@ -105,17 +111,18 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
 1. CargaQuimica (Aggregate Root)  
    - Responsabilidade: Gerenciar o ciclo de vida da carga no terminal, assegurar invariantes e transições de status apenas quando regras forem atendidas.  
    - Identidade: `CargaId` (UUID v4 imutável).  
-   - Atributos principais: `id`, `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnico`, `documentos[]`, `inspecoes[]`, `status`, `historicoStatus[]`, `dataCriacao`.  
+   - Atributos principais: `id`, `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnico`, `origem`, `destino`, `dataEntrada`, `grupoCompatibilidade`, `documentos[]`, `inspecoes[]`, `status`, `historicoStatus[]`, `dataCriacao`.  
    - Regras principais: 
      - Não transita para `LIBERADA` sem documentação completa (`VALIDADO`) e pelo menos uma inspeção com resultado `APROVADO`.
-     - Não aceita alterações quando em estados `CANCELADA` ou `FINALIZADA`.  
+     - Não aceita alterações quando em estados `CANCELADA` ou `FINALIZADA`.
+     - A origem, o destino e a data de entrada devem ser registrados no momento do cadastro da carga e mantidos para rastreabilidade operacional.
    - Relacionamentos: Contém `DocumentoCarga` e `Inspecao`; referencia `ProdutoQuimico` por `produtoQuimicoId`.
 
 2. ProdutoQuimico  
    - Responsabilidade: Catálogo de substâncias com classificação de risco.  
    - Identidade: `ProdutoQuimicoId` (UUID v4).  
-   - Atributos: `id`, `nomeComercial`, `nomeTecnico`, `classificacaoRisco`, `ativo`, `dataCadastro`.  
-   - Regras: Não pode ser cadastrado sem nome e classificação de risco; quando `ativo === false` impede registro de novas cargas associadas.  
+   - Atributos: `id`, `nome`, `descricao`, `grupoCompatibilidade`, `classificacaoRisco`, `ativo`, `dataCadastro`, `dataAtualizacao`.  
+   - Regras: Não pode ser cadastrado sem nome, descrição e classificação de risco; quando `ativo === false` impede registro de novas cargas associadas. O campo `grupoCompatibilidade` identifica a família compatível do produto, e `dataAtualizacao` registra a última alteração cadastral.  
    - Nota: mantido como agregado separado (referência por id).
 
 3. DocumentoCarga  
@@ -173,26 +180,42 @@ Diagrama de estados (Mermaid):
 
 ```mermaid
 stateDiagram-v2
-    [*] --> RASCUNHO
-    RASCUNHO --> REGISTRADA : confirmar_registro
-    REGISTRADA --> EM_INSPECAO : solicitar_inspecao
-    REGISTRADA --> BLOQUEADA : documento_reprovado / reprovação_inspecao
-    EM_INSPECAO --> APROVADA : inspeção_aprovada
-    EM_INSPECAO --> REPROVADA : inspeção_reprovada
-    APROVADA --> LIBERADA : liberar_carga
-    LIBERADA --> FINALIZADA : finalizar
-    ANY --> CANCELADA : cancelar
-    ANY --> BLOQUEADA : bloquear
+    [*] --> AGUARDANDO_DOCUMENTACAO: Registro da Carga
+
+    AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
+    AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
+    AGUARDANDO_DOCUMENTACAO --> BLOQUEADA: Bloqueio Preventivo
+
+    DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
+    DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
+    DOCUMENTACAO_VALIDADA --> BLOQUEADA: Bloqueio Preventivo
+
+    EM_INSPECAO --> LIBERADA: Parecer Favorável
+    EM_INSPECAO --> CANCELADA: Cancelamento
+    EM_INSPECAO --> BLOQUEADA: Irregularidade na Inspeção
+
+    LIBERADA --> EM_MOVIMENTACAO: Início do Transporte
+    LIBERADA --> CANCELADA: Cancelamento
+    LIBERADA --> BLOQUEADA: Interdição Operacional
+
+    EM_MOVIMENTACAO --> FINALIZADA: Conclusão Operacional
+    EM_MOVIMENTACAO --> CANCELADA: Cancelamento
+    EM_MOVIMENTACAO --> BLOQUEADA: Interdição na Movimentação
+
+    BLOQUEADA --> CANCELADA: Cancelamento Definitivo (Fase 2)
+
+    FINALIZADA --> [*]
+    CANCELADA --> [*]
 ```
 
-Observação: `ANY` representa transições possíveis de vários estados mediante eventos operacionais (ex.: emergência).
+Observação: qualquer transição fora desses 16 caminhos deve ser rejeitada pela máquina de estados de domínio, e estados finais não aceitam alterações posteriores.
 
 ---
 
 ## 2.5 Enums e Valores Permitidos
 
-Sugestões (usar em TypeScript/DB/models):
-- StatusCarga = { RASCUNHO, REGISTRADA, EM_ANALISE, EM_INSPECAO, APROVADA, LIBERADA, BLOQUEADA, CANCELADA, FINALIZADA }
+Enum oficial do sistema QuimiPort:
+- StatusCarga = { AGUARDANDO_DOCUMENTACAO, DOCUMENTACAO_VALIDADA, EM_INSPECAO, LIBERADA, EM_MOVIMENTACAO, FINALIZADA, BLOQUEADA, CANCELADA }
 - StatusValidacao = { PENDENTE, VALIDADO, REJEITADO }
 - ResultadoInspecao = { PENDENTE, APROVADO, REPROVADO }
 - UnidadeMedida = { TONELADAS, QUILOGRAMAS, LITROS, METROS_CUBICOS }
@@ -208,7 +231,17 @@ Exemplos concisos de Value Objects e Aggregate Root. Estes são guias; ajuste pa
 Arquivo de enums (exemplo):
 ```typescript
 // name: src/domain/enums.ts
-export enum StatusCarga { RASCUNHO = 'RASCUNHO', REGISTRADA = 'REGISTRADA', LIBERADA = 'LIBERADA', BLOQUEADA = 'BLOQUEADA', CANCELADA = 'CANCELADA', FINALIZADA = 'FINALIZADA' }
+export enum StatusCarga {
+  AGUARDANDO_DOCUMENTACAO = 'AGUARDANDO_DOCUMENTACAO',
+  DOCUMENTACAO_VALIDADA = 'DOCUMENTACAO_VALIDADA',
+  EM_INSPECAO = 'EM_INSPECAO',
+  LIBERADA = 'LIBERADA',
+  EM_MOVIMENTACAO = 'EM_MOVIMENTACAO',
+  FINALIZADA = 'FINALIZADA',
+  BLOQUEADA = 'BLOQUEADA',
+  CANCELADA = 'CANCELADA'
+}
+
 export enum StatusValidacao { PENDENTE = 'PENDENTE', VALIDADO = 'VALIDADO', REJEITADO = 'REJEITADO' }
 export enum ResultadoInspecao { PENDENTE = 'PENDENTE', APROVADO = 'APROVADO', REPROVADO = 'REPROVADO' }
 export enum UnidadeMedida { TONELADAS = 'TONELADAS', QUILOGRAMAS = 'QUILOGRAMAS', LITROS = 'LITROS', METROS_CUBICOS = 'METROS_CUBICOS' }
