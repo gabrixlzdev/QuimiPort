@@ -20,7 +20,9 @@ O projeto adota os princípios de **Clean Architecture** e **DDD (Domain-Driven 
 * **Linguagem Principal:** TypeScript
 * **Paradigma:** Orientação a Objetos + Programação Funcional (Pattern Either)
 * **Arquitetura:** Clean Architecture / Layered Architecture
-* **Banco de Dados (Fase 2):** PostgreSQL `[DECISÃO A VALIDAR PELA EQUIPE]`
+* **Banco de Dados (Fase 2):** PostgreSQL + TypeORM
+  * O PostgreSQL foi escolhido como banco relacional principal por oferecer consistência transacional, integridade referencial, suporte nativo a enumerações e excelente rastreabilidade para auditoria operacional de cargas perigosas. O modelo de dados exige alta confiabilidade em regras como documentação obrigatória, inspeção, bloqueio e liberação de cargas, além de histórico completo de mudanças de status.
+  * O TypeORM será utilizado no backend para mapear entidades e agregados do domínio para o esquema relacional, manter a modelagem em TypeScript e facilitar a persistência de objetos como `ProdutoQuimico`, `CargaQuimica`, `DocumentoCarga` e `HistoricoStatus` com chaves primárias e estrangeiras explícitas.
 * **Framework Web (Fase 2):** NestJS / Fastify `[DECISÃO A VALIDAR PELA EQUIPE]`
 
 ---
