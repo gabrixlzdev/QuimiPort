@@ -23,7 +23,8 @@ O projeto adota os princípios de **Clean Architecture** e **DDD (Domain-Driven 
 * **Banco de Dados (Fase 2):** PostgreSQL + TypeORM
   * O PostgreSQL foi escolhido como banco relacional principal por oferecer consistência transacional, integridade referencial, suporte nativo a enumerações e excelente rastreabilidade para auditoria operacional de cargas perigosas. O modelo de dados exige alta confiabilidade em regras como documentação obrigatória, inspeção, bloqueio e liberação de cargas, além de histórico completo de mudanças de status.
   * O TypeORM será utilizado no backend para mapear entidades e agregados do domínio para o esquema relacional, manter a modelagem em TypeScript e facilitar a persistência de objetos como `ProdutoQuimico`, `CargaQuimica`, `DocumentoCarga` e `HistoricoStatus` com chaves primárias e estrangeiras explícitas.
-* **Framework Web (Fase 2):** NestJS / Fastify `[DECISÃO A VALIDAR PELA EQUIPE]`
+* **Framework Web (Fase 2):** NestJS
+  * O NestJS foi definido como framework oficial do backend por alinhar-se diretamente com a arquitetura proposta: ele estrutura a aplicação com injeção de dependência, decorators para organização de módulos, controllers e providers, além de facilitar a documentação da API com Swagger e o uso de testes automatizados em ambiente Vitest. Essa combinação melhora a manutenção do código, a clareza do domínio e a integração entre regras de negócio, exposição HTTP e qualidade de software.
 
 ---
 
