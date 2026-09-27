@@ -41,14 +41,14 @@ flowchart LR
 
 - **Objetivo:** Manter um catálogo atualizado e seguro dos produtos químicos que circulam no porto, permitindo o registro de novos itens para associação com futuras cargas.
 - **Ator Principal:** Gestor Operacional / Administrador.
-- **Entrada Esperada:** `nomeComercial`, `nomeTecnico`, `classeRisco`, `subclasse`, `numeroONU`, `grupoEmbalagem`.
-- **Saída Esperada:** Mensagem de sucesso e produto químico disponível no sistema no status `ATIVO`.
+- **Entrada Esperada:** `nome`, `descricao`, `grupoCompatibilidade`, `classeRisco`, `subclasse`, `numeroONU`, `grupoEmbalagem`, `dataAtualizacao`.
+- **Saída Esperada:** Mensagem de sucesso, produto químico disponível no sistema no status `ATIVO` e com os campos `nome`, `descricao`, `grupoCompatibilidade` e `dataAtualizacao` persistidos corretamente.
 - **Fluxo Principal:**
   1. O ator informa os dados cadastrais do produto químico.
-  2. O sistema valida se o nome comercial e a descrição técnica foram preenchidos (RN-PRQ-02).
+  2. O sistema valida se o nome e a descrição do produto foram preenchidos e se o grupo de compatibilidade foi informado (RN-PRQ-02).
   3. O sistema verifica se já existe um produto com o mesmo nome e classe de risco (RN-PRQ-06).
   4. O sistema valida o código ONU com 4 dígitos e a classificação de risco (RN-PRQ-03).
-  5. O produto é salvo com ID gerado automaticamente e status `ATIVO` (RN-PRQ-01, RN-PRQ-04).
+  5. O produto é salvo com ID gerado automaticamente, `dataAtualizacao` registrada e status `ATIVO` (RN-PRQ-01, RN-PRQ-04).
 - **Regras de Negócio Relacionadas:** RN-PRQ-01, RN-PRQ-02, RN-PRQ-03, RN-PRQ-04, RN-PRQ-06.
 - **Possíveis Erros ou Exceções:**
   - Tentativa de cadastrar produto com campos obrigatórios em branco (sistema bloqueia).
@@ -78,15 +78,15 @@ flowchart LR
 
 - **Objetivo:** Efetuar o registro inicial de um lote/contêiner de carga química que chega ao terminal portuário.
 - **Ator Principal:** Operador Portuário / Gestor Operacional.
-- **Entrada Esperada:** `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnicoId`, `dataRegistro`.
-- **Saída Esperada:** Mensagem de sucesso e carga registrada no sistema com status inicial `REGISTRADA` (Aguardando Documentação).
+- **Entrada Esperada:** `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnicoId`, `origem`, `destino`, `dataEntrada`, `grupoCompatibilidade`.
+- **Saída Esperada:** Mensagem de sucesso, carga registrada no sistema com status inicial `REGISTRADA` (Aguardando Documentação) e com os campos de origem, destino, data de entrada e grupo de compatibilidade persistidos corretamente.
 - **Fluxo Principal:**
-  1. O operador informa os dados da carga, data e seleciona o produto e responsável técnico.
-  2. O sistema verifica se a data de registro é retroativa (anterior a hoje); se for, exige aprovação superior (RN-CRQ-12).
-  3. O sistema valida se o produto químico associado está `ATIVO` (RN-CRQ-02, RN-CRQ-08).
+  1. O operador informa os dados da carga, a origem, o destino, a data de entrada e seleciona o produto e responsável técnico.
+  2. O sistema verifica se a data de entrada é retroativa (anterior a hoje); se for, exige aprovação superior (RN-CRQ-12).
+  3. O sistema valida se o produto químico associado está `ATIVO` e se o grupo de compatibilidade da carga coincide com o do produto (RN-CRQ-02, RN-CRQ-08).
   4. O sistema valida se a quantidade informada é maior que zero (RN-CRQ-03).
-  5. O sistema valida a presença de um responsável técnico (RN-CRQ-05).
-  6. A carga é criada com ID automático e status inicial `REGISTRADA` (RN-CRQ-01, RN-CRQ-04).
+  5. O sistema valida a presença de um responsável técnico e dos campos de origem/destino obrigatórios (RN-CRQ-05).
+  6. A carga é criada com ID automático, `dataEntrada` registrada e status inicial `REGISTRADA` (RN-CRQ-01, RN-CRQ-04).
 - **Regras de Negócio Relacionadas:** RN-CRQ-01, RN-CRQ-02, RN-CRQ-03, RN-CRQ-04, RN-CRQ-05, RN-CRQ-08, RN-CRQ-12.
 - **Possíveis Erros ou Exceções:**
   - Tentativa de registrar carga sem produto químico associado ou com produto inativo (operação bloqueada).

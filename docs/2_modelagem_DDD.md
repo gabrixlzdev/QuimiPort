@@ -26,6 +26,10 @@ classDiagram
         -ProdutoQuimicoId produtoQuimicoId
         -QuantidadeCarga quantidade
         -ResponsavelTecnicoId responsavelTecnicoId
+        -string origem
+        -string destino
+        -Date dataEntrada
+        -string grupoCompatibilidade
         -StatusCarga status
         -List~DocumentoCarga~ documentos
         -List~Inspecao~ inspecoes
@@ -39,8 +43,10 @@ classDiagram
 
     class ProdutoQuimicoEntity {
         -ProdutoQuimicoId id
-        -string nomeComercial
-        -string nomeTecnico
+        -string nome
+        -string descricao
+        -string grupoCompatibilidade
+        -Date dataAtualizacao
         -ClassificacaoRisco classificacaoRisco
         -boolean ativo
         +inativar()
@@ -105,17 +111,18 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
 1. CargaQuimica (Aggregate Root)  
    - Responsabilidade: Gerenciar o ciclo de vida da carga no terminal, assegurar invariantes e transições de status apenas quando regras forem atendidas.  
    - Identidade: `CargaId` (UUID v4 imutável).  
-   - Atributos principais: `id`, `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnico`, `documentos[]`, `inspecoes[]`, `status`, `historicoStatus[]`, `dataCriacao`.  
+   - Atributos principais: `id`, `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnico`, `origem`, `destino`, `dataEntrada`, `grupoCompatibilidade`, `documentos[]`, `inspecoes[]`, `status`, `historicoStatus[]`, `dataCriacao`.  
    - Regras principais: 
      - Não transita para `LIBERADA` sem documentação completa (`VALIDADO`) e pelo menos uma inspeção com resultado `APROVADO`.
-     - Não aceita alterações quando em estados `CANCELADA` ou `FINALIZADA`.  
+     - Não aceita alterações quando em estados `CANCELADA` ou `FINALIZADA`.
+     - A origem, o destino e a data de entrada devem ser registrados no momento do cadastro da carga e mantidos para rastreabilidade operacional.
    - Relacionamentos: Contém `DocumentoCarga` e `Inspecao`; referencia `ProdutoQuimico` por `produtoQuimicoId`.
 
 2. ProdutoQuimico  
    - Responsabilidade: Catálogo de substâncias com classificação de risco.  
    - Identidade: `ProdutoQuimicoId` (UUID v4).  
-   - Atributos: `id`, `nomeComercial`, `nomeTecnico`, `classificacaoRisco`, `ativo`, `dataCadastro`.  
-   - Regras: Não pode ser cadastrado sem nome e classificação de risco; quando `ativo === false` impede registro de novas cargas associadas.  
+   - Atributos: `id`, `nome`, `descricao`, `grupoCompatibilidade`, `classificacaoRisco`, `ativo`, `dataCadastro`, `dataAtualizacao`.  
+   - Regras: Não pode ser cadastrado sem nome, descrição e classificação de risco; quando `ativo === false` impede registro de novas cargas associadas. O campo `grupoCompatibilidade` identifica a família compatível do produto, e `dataAtualizacao` registra a última alteração cadastral.  
    - Nota: mantido como agregado separado (referência por id).
 
 3. DocumentoCarga  
