@@ -12,12 +12,12 @@ flowchart BT
     INF -. implementa interfaces .-> APP
 ```
 
-| Camada | Responsabilidade | Pode depender de |
-| :--- | :--- | :--- |
-| `domain` | Entidades, agregados, Value Objects, enums, invariantes e erros de negócio | Nada externo ao domínio |
-| `application` | Casos de uso, DTOs de entrada/saída e interfaces (*ports*) | `domain` |
-| `presentation` | Controllers, validação de formato e tradução HTTP | `application` |
-| `infrastructure` | Banco, ORM, filas, relógio e implementações dos contratos | `application` e `domain` apenas para mapear dados |
+| Camada           | Responsabilidade                                                           | Pode depender de                                  |
+| :--------------- | :------------------------------------------------------------------------- | :------------------------------------------------ |
+| `domain`         | Entidades, agregados, Value Objects, enums, invariantes e erros de negócio | Nada externo ao domínio                           |
+| `application`    | Casos de uso, DTOs de entrada/saída e interfaces (_ports_)                 | `domain`                                          |
+| `presentation`   | Controllers, validação de formato e tradução HTTP                          | `application`                                     |
+| `infrastructure` | Banco, ORM, filas, relógio e implementações dos contratos                  | `application` e `domain` apenas para mapear dados |
 
 As dependências de código apontam para dentro. Um caso de uso não importa controller, ORM ou framework. A infraestrutura implementa interfaces definidas pela aplicação e é injetada na composição do sistema.
 
@@ -73,7 +73,104 @@ src/
     └── controllers/                      # Controllers da API REST
 ```
 
-## 5.3 Recursos Avançados do TypeScript no Projeto
+## 5.3 Persistência Relacional e Mapeamento do Banco de Dados
+
+O QuimiPort formaliza a adoção de um banco de dados relacional, com PostgreSQL como base de persistência e TypeORM como camada de mapeamento e acesso ao banco no backend. A decisão é coerente com o domínio crítico do sistema, em que cargas perigosas exigem rastreabilidade completa, integridade referencial, auditoria de mudanças de status e validação documental antes da liberação operacional.
+
+A persistência será organizada em torno do relacionamento semântico principal do domínio:
+
+- `produto_quimico` → origem do cadastro de referência do material
+- `carga_quimica` → registro operacional da carga associada a um produto
+- `documento_carga` → documentos exigidos para conformidade da carga
+- `historico_status` → trilha de auditoria das transições do ciclo de vida da carga
+
+### 5.3.1 Modelo relacional recomendado
+
+| Entidade / Tabela        | Chave Primária (PK) | Chaves Estrangeiras (FK)                   | Descrição                                                                                                                                |
+| :----------------------- | :------------------ | :----------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| `produto_quimico`        | `id`                | —                                          | Catálogo do produto químico, com classificação de risco, status ativo/inativo e dados de referência.                                     |
+| `carga_quimica`          | `id`                | `produto_quimico_id -> produto_quimico.id` | Representa a carga física/operacional vinculada a um produto. Armazena o status atual da carga usando a enumeração oficial de 8 estados. |
+| `documento_carga`        | `id`                | `carga_quimica_id -> carga_quimica.id`     | Documentos obrigatórios ou complementares da carga (FDS/FISPQ, licenças, laudos e comprovantes).                                         |
+| `historico_status_carga` | `id`                | `carga_quimica_id -> carga_quimica.id`     | Registro de auditoria de todas as transições de status realizadas pela máquina de estados.                                               |
+| `responsavel_tecnico`    | `id`                | —                                          | Dados do responsável técnico que assina ou valida a operação e a conformidade da carga.                                                  |
+| `inspecao`               | `id`                | `carga_quimica_id -> carga_quimica.id`     | Registra a inspeção operacional e seus resultados (aprovado/reprovado).                                                                  |
+| `area_armazenamento`     | `id`                | —                                          | Referência de pátio, armazém ou área de estocagem vinculada à operação.                                                                  |
+
+### 5.3.2 Estrutura do relacionamento principal
+
+```text
+produto_quimico (1) ───< (N) carga_quimica
+carga_quimica (1) ───< (N) documento_carga
+carga_quimica (1) ───< (N) historico_status_carga
+carga_quimica (1) ───< (N) inspecao
+```
+
+Essa estrutura respeita a regra de negócio de que um produto pode ser reutilizado em várias cargas, mas cada carga pertence a um único produto. Do mesmo modo, cada carga pode possuir múltiplos documentos e múltiplos registros de histórico de status, sendo o histórico a fonte de auditoria da sequência de estados e da trilha operacional.
+
+### 5.3.3 Status atual da carga e enumeração do domínio
+
+A tabela `carga_quimica` manterá o status atual da carga em uma coluna `status` mapeada para a enumeração `StatusCarga` do domínio. A enumeração oficial do QuimiPort é composta pelos 8 estados abaixo:
+
+```ts
+export enum StatusCarga {
+  AGUARDANDO_DOCUMENTACAO = "AGUARDANDO_DOCUMENTACAO",
+  DOCUMENTACAO_VALIDADA = "DOCUMENTACAO_VALIDADA",
+  EM_INSPECAO = "EM_INSPECAO",
+  LIBERADA = "LIBERADA",
+  EM_MOVIMENTACAO = "EM_MOVIMENTACAO",
+  FINALIZADA = "FINALIZADA",
+  BLOQUEADA = "BLOQUEADA",
+  CANCELADA = "CANCELADA",
+}
+```
+
+No mapeamento com TypeORM, a coluna pode ser persistida como `enum` nativo do PostgreSQL ou como `varchar` com validação pela aplicação, conforme estratégia de schema definida no backend. O importante é que a tabela preserve o status corrente da carga em um único campo obrigatório, refletindo sempre o estado operational atual em que a carga se encontra.
+
+### 5.3.4 Histórico de status e auditoria operacional
+
+A tabela `historico_status_carga` será responsável por manter a rastreabilidade e a auditoria de todas as alterações de status sofridas por uma carga. Ela não substitui o status atual da carga; ela complementa a visão atual com a linha do tempo das mudanças.
+
+Os campos mínimos esperados incluem:
+
+- `id` (PK)
+- `carga_quimica_id` (FK para `carga_quimica.id`)
+- `status_anterior` (valor do status antes da transição)
+- `status_novo` (valor do status após a transição)
+- `data_hora` (timestamp da transição)
+- `responsavel_id` ou `usuario_id` (quem executou a ação)
+- `motivo` (opcional, para detalhar bloqueio, cancelamento, liberação ou inspeção)
+
+A persistência do histórico permite reconstituir, em qualquer momento, a sequência de transições executadas pela máquina de estados do domínio. Por exemplo:
+
+```text
+AGUARDANDO_DOCUMENTACAO -> DOCUMENTACAO_VALIDADA -> EM_INSPECAO -> LIBERADA -> EM_MOVIMENTACAO -> FINALIZADA
+```
+
+ou, em cenários de exceção:
+
+```text
+DOCUMENTACAO_VALIDADA -> BLOQUEADA -> CANCELADA
+```
+
+Esse registro é essencial para auditoria, conformidade regulatória e análise operacional em incidentes, bloqueios e cancelamentos.
+
+### 5.3.5 Considerações de implementação com TypeORM
+
+O TypeORM será usado para mapear as entidades do domínio para o modelo relacional, mantendo a separação entre domínio e infraestrutura. Em prática, a camada de infraestrutura implementará as entidades ORM com relação explícita entre:
+
+- `ProdutoQuimico` e `CargaQuimica`
+- `CargaQuimica` e `DocumentoCarga`
+- `CargaQuimica` e `HistoricoStatusCarga`
+- `CargaQuimica` e `Inspecao`
+
+A persistência em PostgreSQL favorece:
+
+- integridade referencial com FKs;
+- consultas e relatórios de auditoria e rastreabilidade por carga;
+- suporte a transações críticas para validação documental e alteração de status;
+- compatibilidade com a modelagem de regras de negócio críticas em um sistema portuário.
+
+## 5.4 Recursos Avançados do TypeScript no Projeto
 
     A aplicação utiliza os recursos do TypeScript para garantir a segurança de tipos e o cumprimento das invariantes de DDD:
 
@@ -85,33 +182,32 @@ src/
 
     Tipagem Funcional com Tipo Result / Either: Tratamento de erros de domínio sem disparar exceções pesadas na call-stack, utilizando o tipo   Either<DomainError, SuccessResult>.
 
-
 O diretório `shared` contém apenas elementos realmente transversais. Regras específicas permanecem no módulo proprietário. Imports entre módulos passam pelas APIs públicas de aplicação, nunca pelas entidades internas nem por tabelas.
 
 ## 5.3 Aplicação explícita de JavaScript/TypeScript
 
-| Recurso | Onde entra | Finalidade no QuimiPort |
-| :--- | :--- | :--- |
-| **Interfaces** | Portas em `application/ports`, como `ProdutoQuimicoQuery` e `CargaRepository` | Define contratos e permite trocar banco ou integração sem alterar casos de uso |
-| **Enums** | Domínio: `StatusCarga`, `StatusValidacao`, `ResultadoInspecao` | Restringe estados válidos; `EXPIRADO` não integra `StatusValidacao` |
-| **Generics** | `Either<E, A>`, `Repository<T, ID>` e `Page<T>` | Reutiliza estruturas preservando tipos de erro, sucesso e entidade |
-| **Funções puras** | `estaVencido(dataValidade, agora)` e validações de transição | Produz o mesmo resultado para as mesmas entradas e facilita testes |
-| **async/await** | Casos de uso e adaptadores de infraestrutura | Orquestra I/O assíncrono; entidades do domínio continuam síncronas |
-| **Tratamento de erros** | `Either` para falhas esperadas; `try/catch` na borda para falhas técnicas | Separa erros de negócio de indisponibilidade de banco/rede |
-| **Contratos** | DTOs, interfaces de portas e retornos tipados | Torna entradas, saídas e falhas explícitas entre camadas e contextos |
+| Recurso                 | Onde entra                                                                    | Finalidade no QuimiPort                                                        |
+| :---------------------- | :---------------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
+| **Interfaces**          | Portas em `application/ports`, como `ProdutoQuimicoQuery` e `CargaRepository` | Define contratos e permite trocar banco ou integração sem alterar casos de uso |
+| **Enums**               | Domínio: `StatusCarga`, `StatusValidacao`, `ResultadoInspecao`                | Restringe estados válidos; `EXPIRADO` não integra `StatusValidacao`            |
+| **Generics**            | `Either<E, A>`, `Repository<T, ID>` e `Page<T>`                               | Reutiliza estruturas preservando tipos de erro, sucesso e entidade             |
+| **Funções puras**       | `estaVencido(dataValidade, agora)` e validações de transição                  | Produz o mesmo resultado para as mesmas entradas e facilita testes             |
+| **async/await**         | Casos de uso e adaptadores de infraestrutura                                  | Orquestra I/O assíncrono; entidades do domínio continuam síncronas             |
+| **Tratamento de erros** | `Either` para falhas esperadas; `try/catch` na borda para falhas técnicas     | Separa erros de negócio de indisponibilidade de banco/rede                     |
+| **Contratos**           | DTOs, interfaces de portas e retornos tipados                                 | Torna entradas, saídas e falhas explícitas entre camadas e contextos           |
 
 Exemplo representativo:
 
 ```typescript
 export enum StatusValidacao {
-  PENDENTE = 'PENDENTE',
-  VALIDADO = 'VALIDADO',
-  REJEITADO = 'REJEITADO',
+  PENDENTE = "PENDENTE",
+  VALIDADO = "VALIDADO",
+  REJEITADO = "REJEITADO",
 }
 
 export type Either<E, A> =
-  | { readonly kind: 'left'; readonly error: E }
-  | { readonly kind: 'right'; readonly value: A };
+  | { readonly kind: "left"; readonly error: E }
+  | { readonly kind: "right"; readonly value: A };
 
 export interface ProdutoQuimicoQuery {
   buscarAtivoPorId(id: string): Promise<ProdutoQuimicoResumo | null>;
@@ -136,17 +232,22 @@ export class LiberarCarga {
     private readonly clock: Clock,
   ) {}
 
-  async execute(input: LiberarCargaInput): Promise<Either<LiberarCargaError, CargaDTO>> {
+  async execute(
+    input: LiberarCargaInput,
+  ): Promise<Either<LiberarCargaError, CargaDTO>> {
     const carga = await this.cargas.buscarPorId(input.cargaId);
     if (!carga) {
-      return { kind: 'left', error: new CargaNaoEncontradaError(input.cargaId) };
+      return {
+        kind: "left",
+        error: new CargaNaoEncontradaError(input.cargaId),
+      };
     }
 
     const resultado = carga.liberar(this.clock.now());
-    if (resultado.kind === 'left') return resultado;
+    if (resultado.kind === "left") return resultado;
 
     await this.cargas.salvar(carga);
-    return { kind: 'right', value: CargaMapper.toDTO(carga) };
+    return { kind: "right", value: CargaMapper.toDTO(carga) };
   }
 }
 ```
@@ -161,12 +262,12 @@ Exceções e `try/catch` ficam reservados para falhas técnicas inesperadas, com
 
 ## 5.5 Práticas adotadas sem ampliar o escopo
 
-| Prática | Uso |
-| :--- | :--- |
-| DDD | Linguagem ubíqua, Bounded Contexts, agregados e invariantes |
-| Rich Domain Model | Comportamentos e transições protegidos pelas entidades |
-| Dependency Inversion | Casos de uso dependem de interfaces |
-| Repository | Persistência orientada aos limites dos agregados |
-| Either / Result | Falhas de negócio explícitas e tipadas |
+| Prática              | Uso                                                         |
+| :------------------- | :---------------------------------------------------------- |
+| DDD                  | Linguagem ubíqua, Bounded Contexts, agregados e invariantes |
+| Rich Domain Model    | Comportamentos e transições protegidos pelas entidades      |
+| Dependency Inversion | Casos de uso dependem de interfaces                         |
+| Repository           | Persistência orientada aos limites dos agregados            |
+| Either / Result      | Falhas de negócio explícitas e tipadas                      |
 
 Novos padrões só serão adicionados quando resolverem um problema concreto. A prioridade desta fase é manter consistentes regras, casos de uso, estados, contratos e testes.
