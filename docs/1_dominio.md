@@ -75,5 +75,59 @@ A **Fase 1** contempla o desenho arquitetural, a modelagem de domínio com Domai
 | **Inspeção** | Procedimento de vistoria física e verificação preventiva realizado na carga para checar lacres, vazamentos, rotulagem e conformidade da embalagem. |
 | **Liberação** | Ação formal que altera o estado da Carga Química para autorizar sua movimentação física ou desembarque do terminal. |
 | **Bloqueio** | Ação preventiva ou corretiva que impede qualquer movimentação física ou transição operacional da Carga Química devido a irregularidades ou emergências. |
-| **Status da Carga** | A etapa exata do ciclo de vida em que a Carga Química se encontra (ex.: `RASCUNHO`, `REGISTRADA`, `EM_ANALISE`, `EM_INSPECAO`, `LIBERADA`, `BLOQUEADA`, `CANCELADA`, `FINALIZADA`). |
+| **Status da Carga** | A etapa exata do ciclo de vida em que a Carga Química se encontra, seguindo a máquina de estados oficial do QuimiPort: `AGUARDANDO_DOCUMENTACAO`, `DOCUMENTACAO_VALIDADA`, `EM_INSPECAO`, `LIBERADA`, `EM_MOVIMENTACAO`, `FINALIZADA`, `BLOQUEADA` e `CANCELADA`. |
 | **Invariante** | Uma regra de negócio estrita e imutável que deve ser mantida verdadeira durante todo o tempo de vida de um Agregado do domínio. |
+
+---
+
+## 1.8 Ciclo de Vida / Fluxo de Status da Carga Química
+
+A máquina de estados da Carga Química no QuimiPort é fechada e exclusiva: apenas os 8 status oficiais e as 16 transições permitidas são válidas. A intenção da modelagem é impedir transições arbitrárias e manter a rastreabilidade operacional de forma auditável.
+
+### Status oficiais
+1. `AGUARDANDO_DOCUMENTACAO` — status inicial do registro da carga.
+2. `DOCUMENTACAO_VALIDADA` — documentação obrigatória validada pelo sistema e pela operação.
+3. `EM_INSPECAO` — carga em vistoria técnica/operacional.
+4. `LIBERADA` — carga autorizada para movimentação.
+5. `EM_MOVIMENTACAO` — carga em trânsito, descarregamento ou movimentação ativa.
+6. `FINALIZADA` — status terminal, concluído operacionalmente.
+7. `BLOQUEADA` — carga interditada por irregularidade ou bloqueio operacional.
+8. `CANCELADA` — status terminal, cancelamento definitivo da carga.
+
+### Regras de transição e terminalidade
+- `FINALIZADA` e `CANCELADA` são estados terminais e imutáveis.
+- Qualquer transição fora da lista de 16 caminhos deve ser tratada como inválida pela máquina de estados.
+- Na Fase 2, o desbloqueio operacional da carga fica postergado; portanto, uma carga `BLOQUEADA` só pode ser alterada para `CANCELADA`.
+- Não há retorno de `FINALIZADA` ou `CANCELADA` para outro estado.
+
+```mermaid
+stateDiagram-v2
+    [*] --> AGUARDANDO_DOCUMENTACAO: Registro da Carga
+
+    AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
+    AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
+    AGUARDANDO_DOCUMENTACAO --> BLOQUEADA: Bloqueio Preventivo
+
+    DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
+    DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
+    DOCUMENTACAO_VALIDADA --> BLOQUEADA: Bloqueio Preventivo
+
+    EM_INSPECAO --> LIBERADA: Parecer Favorável
+    EM_INSPECAO --> CANCELADA: Cancelamento
+    EM_INSPECAO --> BLOQUEADA: Irregularidade na Inspeção
+
+    LIBERADA --> EM_MOVIMENTACAO: Início do Transporte
+    LIBERADA --> CANCELADA: Cancelamento
+    LIBERADA --> BLOQUEADA: Interdição Operacional
+
+    EM_MOVIMENTACAO --> FINALIZADA: Conclusão Operacional
+    EM_MOVIMENTACAO --> CANCELADA: Cancelamento
+    EM_MOVIMENTACAO --> BLOQUEADA: Interdição na Movimentação
+
+    BLOQUEADA --> CANCELADA: Cancelamento Definitivo (Fase 2)
+
+    FINALIZADA --> [*]
+    CANCELADA --> [*]
+```
+
+---
