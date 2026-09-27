@@ -1,6 +1,6 @@
 # ⚓ QuimiPort — Gestão de Cargas Químicas Portuárias
 
-> **Tech Challenge — Fase 1 | Pós-Tech em Full Stack Development**  
+> **Tech Challenge | Pós-Tech em Full Stack Development**  
 > Proposta técnica de arquitetura de software, Domain-Driven Design (DDD) e especificação técnica para o controle de conformidade de cargas perigosas no ambiente portuário.
 
 ---
@@ -17,14 +17,14 @@ A aplicação atua como um motor rígido de conformidade, impedindo que cargas c
 
 O projeto adota os princípios de **Clean Architecture** e **DDD (Domain-Driven Design)**, segregando o núcleo de negócio de detalhes de infraestrutura.
 
-* **Linguagem Principal:** TypeScript
-* **Paradigma:** Orientação a Objetos + Programação Funcional (Pattern Either)
-* **Arquitetura:** Clean Architecture / Layered Architecture
-* **Banco de Dados (Fase 2):** PostgreSQL + TypeORM
-  * O PostgreSQL foi escolhido como banco relacional principal por oferecer consistência transacional, integridade referencial, suporte nativo a enumerações e excelente rastreabilidade para auditoria operacional de cargas perigosas. O modelo de dados exige alta confiabilidade em regras como documentação obrigatória, inspeção, bloqueio e liberação de cargas, além de histórico completo de mudanças de status.
-  * O TypeORM será utilizado no backend para mapear entidades e agregados do domínio para o esquema relacional, manter a modelagem em TypeScript e facilitar a persistência de objetos como `ProdutoQuimico`, `CargaQuimica`, `DocumentoCarga` e `HistoricoStatus` com chaves primárias e estrangeiras explícitas.
-* **Framework Web (Fase 2):** NestJS
-  * O NestJS foi definido como framework oficial do backend por alinhar-se diretamente com a arquitetura proposta: ele estrutura a aplicação com injeção de dependência, decorators para organização de módulos, controllers e providers, além de facilitar a documentação da API com Swagger e o uso de testes automatizados em ambiente Vitest. Essa combinação melhora a manutenção do código, a clareza do domínio e a integração entre regras de negócio, exposição HTTP e qualidade de software.
+- **Linguagem Principal:** TypeScript
+- **Paradigma:** Orientação a Objetos + Programação Funcional (Pattern Either)
+- **Arquitetura:** Clean Architecture / Layered Architecture
+- **Banco de Dados (Fase 2):** PostgreSQL + TypeORM
+  - O PostgreSQL foi escolhido como banco relacional principal por oferecer consistência transacional, integridade referencial, suporte nativo a enumerações e excelente rastreabilidade para auditoria operacional de cargas perigosas. O modelo de dados exige alta confiabilidade em regras como documentação obrigatória, inspeção, bloqueio e liberação de cargas, além de histórico completo de mudanças de status.
+  - O TypeORM será utilizado no backend para mapear entidades e agregados do domínio para o esquema relacional, manter a modelagem em TypeScript e facilitar a persistência de objetos como `ProdutoQuimico`, `CargaQuimica`, `DocumentoCarga` e `HistoricoStatus` com chaves primárias e estrangeiras explícitas.
+- **Framework Web (Fase 2):** NestJS
+  - O NestJS foi definido como framework oficial do backend por alinhar-se diretamente com a arquitetura proposta: ele estrutura a aplicação com injeção de dependência, decorators para organização de módulos, controllers e providers, além de facilitar a documentação da API com Swagger e o uso de testes automatizados em ambiente Vitest. Essa combinação melhora a manutenção do código, a clareza do domínio e a integração entre regras de negócio, exposição HTTP e qualidade de software.
 
 ---
 
@@ -33,19 +33,19 @@ O projeto adota os princípios de **Clean Architecture** e **DDD (Domain-Driven 
 Acesse os documentos detalhados de cada módulo da solução:
 
 1. [📘 Domínio e Contexto](docs/1_dominio.md)
-   * Contexto, problema, objetivos, atores/perfis e linguagem ubíqua.
+   - Contexto, problema, objetivos, atores/perfis e linguagem ubíqua.
 2. [🧩 Modelagem com DDD](docs/2_modelagem_DDD.md)
-   * Entidades, Objetos de Valor (VOs), Agregados e Invariantes do sistema.
+   - Entidades, Objetos de Valor (VOs), Agregados e Invariantes do sistema.
 3. [📋 Casos de Uso e Fluxos](docs/3_casos_de_uso.md)
-   * Especificação dos Casos de Uso (UC-001 ao UC-008) e Matriz de Transição de Status.
+   - Especificação dos Casos de Uso (UC-001 ao UC-008) e Matriz de Transição de Status.
 4. [⚖️ Regras de Negócio](docs/4_regras_de_negocio.md)
-   * Levantamento e alocação arquitetural das regras (RN-001 à RN-015).
+   - Levantamento e alocação arquitetural das regras (RN-001 à RN-015).
 5. [🏛️ Arquitetura e Design Técnico](docs/5_arquitetura.md)
-   * Clean Architecture, estrutura de pastas, exemplos TypeScript e ADRs.
+   - Clean Architecture, estrutura de pastas, exemplos TypeScript e ADRs.
 6. [🧪 Plano de Qualidade e Testes](docs/6_estrutura_de_testes.md)
-   * Pirâmide de testes e matriz de cenários de teste do domínio.
+   - Pirâmide de testes e matriz de cenários de teste do domínio.
 7. [📝 Decisões Arquiteturais](docs/7_decisoes_arquiteturais.md)
-   * Registro das decisões, alternativas e consequências arquiteturais.
+   - Registro das decisões, alternativas e consequências arquiteturais.
 
 ---
 
@@ -66,9 +66,11 @@ Esta documentação está organizada seguindo a jornada de entendimento do domí
 ---
 
 ## 👥 Autores & Equipe
-* **Instituição:** FIAP
-* **Curso:** Pós-Tech em Full Stack Development
-* **Integrantes (matrícula e nome completo):**
+
+- **Instituição:** FIAP
+- **Curso:** Pós-Tech em Full Stack Development
+- **Integrantes (matrícula e nome completo):**
+
 1. rm376907 - Andreia Alencar Carvalho da Silva
 2. rm376913 - Gabriel Xavier Luz
 3. rm374397 - Ivo Shiguenobu Sacagami

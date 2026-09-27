@@ -252,11 +252,25 @@ export class LiberarCarga {
 }
 ```
 
-## 5.4 Por que usar Either / Result
+## 5.4 Tratamento funcional de erros de negócio com Either / Result
 
-`Either<Erro, Sucesso>` evita usar exceções como fluxo normal para decisões previsíveis do negócio. Sua assinatura obriga quem chama a tratar sucesso e falha e informa quais resultados são possíveis.
+No QuimiPort, as regras de negócio que podem falhar em cenários previsíveis são modeladas como valores de retorno tipados, e não como exceções de fluxo. Essa escolha é coerente com o desenho arquitetural e de domínio do sistema, e com a Clean Architecture, na qual a regra de negócio deve permanecer explícita e independente de frameworks, HTTP e infraestrutura.
 
-No QuimiPort, `Left` representa falhas recuperáveis: produto inativo ou duplicado, quantidade inválida, responsável técnico ausente/inválido, documento obrigatório ausente, pendente, rejeitado ou vencido, inspeção pendente/reprovada, carga bloqueada, transição inválida e carga cancelada/finalizada. `Right` contém o resultado bem-sucedido.
+`Either<ErroDeNegocio, Sucesso>` representa duas possibilidades explícitas:
+
+- `Left`: falha esperada do domínio, que pode ser tratada e documentada no próprio contrato da operação.
+- `Right`: operação concluída com sucesso e valor de retorno válido.
+
+Essa abordagem evita que o fluxo principal do sistema dependa de `throw new Error()` para decisões de negócio. A assinatura do caso de uso comunica, de forma declarativa, quais erros podem ocorrer e exige que o chamador trate o cenário de falha antes de prosseguir. Em outras palavras, o contrato revela o domínio em vez de esconder regras por trás de exceções genéricas.
+
+No QuimiPort, `Left` representa falhas recuperáveis e previstas, tais como: produto inativo ou duplicado, quantidade inválida, responsável técnico ausente/inválido, documento obrigatório ausente, pendente, rejeitado ou vencido, inspeção pendente/reprovada, carga bloqueada, transição de status inválida e carga cancelada/finalizada. `Right` contém o resultado bem-sucedido, normalmente um DTO ou um agregado atualizado.
+
+Essa distinção também é importante para separar dois tipos de falha:
+
+- `Erro de negócio`: cenário esperado do domínio, modelado no tipo e tratado como parte do fluxo da aplicação (ex.: documento obrigatório ausente, inspeção reprovada, carga bloqueada).
+- `Erro técnico`: indisponibilidade de banco, falha de rede, problema de infraestrutura ou persistência, tratado na borda da aplicação com `try/catch`, adaptadores e logs específicos.
+
+Portanto, o padrão `Either / Result` não é apenas uma convenção de programação funcional: ele materializa a semântica do domínio no contrato da aplicação, deixando explícitas as falhas que o negócio reconhece e exigindo tratamento consciente antes de qualquer continuação do fluxo.
 
 Exceções e `try/catch` ficam reservados para falhas técnicas inesperadas, como indisponibilidade do banco, timeout ou erro de rede. A apresentação converte `Left` em resposta adequada e uma exceção técnica em 500/503, sem expor detalhes internos.
 

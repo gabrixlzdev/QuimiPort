@@ -47,15 +47,20 @@
 - **Status:** Aprovado
 - **Data:**
 - **Contexto:**
-  O lançamento excessivo de exceções (`throw new Error()`) para controle de fluxo de negócio (ex: "Carga sem documentação", "Produto inativo") polui a call-stack e torna o fluxo da aplicação imprevisível e custoso computacionalmente no Node.js.
+  O sistema QuimiPort opera com regras de negócio críticas e cenários de validação recorrentes, como documentos ausentes, inspeções reprovadas, transições de status inválidas, produtos inativos e cargas bloqueadas. O uso excessivo de exceções (`throw new Error()`) para controlar esse fluxo torna a aplicação menos previsível, polui a call-stack e mistura regras de domínio com falhas técnicas. A decisão será alinhada com a Clean Architecture, em que regras de negócio devem permanecer explícitas e independentes de infraestrutura.
 
 - **Decisão:**
-  Adotar o padrão funcional **Either / Result Type** (`Either<DomainError, SuccessResult>`) nos Casos de Uso e Agregados do Domínio.
+  Adotar o padrão funcional **Either / Result Type** (`Either<DomainError, SuccessResult>`) nos Casos de Uso e Agregados do Domínio, de modo que todo resultado de negócio seja expresso em um contrato tipado: `Left` para falhas esperadas e `Right` para sucesso.
 
 - **Consequências:**
   - **Positivas:**
     - Explicita na assinatura do método todos os erros de negócio possíveis que ele pode retornar.
-    - Obriga o desenvolvedor/Controller a tratar o cenário de falha de forma declarativa.
-    - Preserva o uso de exceções apenas para erros verdadeiramente inesperados (ex: queda de banco de dados, falha de rede).
-- **Negativas:**
+    - Torna o contrato da operação legível e auto-documentado para a camada de aplicação e para a apresentação.
+    - Força o tratamento declarativo do cenário de falha e evita o uso de exceções como mecanismo principal de controle de fluxo do domínio.
+    - Mantém o uso de exceções apenas para erros verdadeiramente inesperados, como indisponibilidade de banco, falha de rede ou problemas de infraestrutura.
+    - Alinha a solução com a Clean Architecture, em que a lógica de negócio permanece explícita e independente de frameworks e infraestrutura.
+  - **Negativas:**
     - Curva de aprendizado inicial para membros da equipe não familiarizados com programação funcional.
+    - Exige disciplina de modelagem para que cada erro de negócio seja representado corretamente por um tipo bem definido.
+
+> Esta ADR permanece formalmente aprovada porque o padrão Either / Result não é apenas uma técnica de implementação, mas uma decisão arquitetural que organiza a representação das falhas do negócio de forma coerente com a modelagem de domínio e com os casos de uso do projeto.
