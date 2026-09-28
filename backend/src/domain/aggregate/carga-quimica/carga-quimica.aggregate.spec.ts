@@ -71,6 +71,64 @@ describe('CargaQuimicaAggregate', () => {
     expect(carga.status).toBe(StatusCarga.BLOQUEADA);
   });
 
+  it('deve rejeitar tentativa de liberar sem documentação válida', () => {
+    const carga = criarCarga();
+
+    carga.registrarInspecao(
+      new Inspecao({
+        id: 'inspecao-3',
+        dataSolicitacao: new Date('2026-01-02'),
+        dataRealizacao: new Date('2026-01-03'),
+        inspetorId: 'inspetor-1',
+        resultado: ResultadoInspecao.APROVADO,
+        observacoes: 'Tudo ok',
+      }),
+    );
+
+    expect(() => carga.liberarCarga('Sem documentação válida')).toThrow(
+      /Documentação incompleta|Impossível liberar/i,
+    );
+  });
+
+  it('deve rejeitar tentativa de liberar sem inspeção aprovada', () => {
+    const carga = criarCarga();
+
+    carga.anexarDocumento(
+      new DocumentoCarga({
+        id: 'doc-2',
+        tipoDocumento: 'FDS',
+        numeroReferencia: 'REF-002',
+        urlArquivo: 'https://example.com/fds-2.pdf',
+        dataEmissao: new Date('2025-01-01'),
+        dataValidade: new Date('2030-01-01'),
+        statusValidacao: StatusValidacao.VALIDADO,
+      }),
+    );
+
+    expect(() => carga.liberarCarga('Sem inspeção aprovada')).toThrow(
+      /Nenhuma inspeção aprovada|Impossível liberar/i,
+    );
+  });
+
+  it('deve impedir anexar documento em carga cancelada', () => {
+    const carga = criarCarga();
+    carga.changeStatus(StatusCarga.CANCELADA);
+
+    expect(() =>
+      carga.anexarDocumento(
+        new DocumentoCarga({
+          id: 'doc-3',
+          tipoDocumento: 'FDS',
+          numeroReferencia: 'REF-003',
+          urlArquivo: 'https://example.com/fds-3.pdf',
+          dataEmissao: new Date('2025-01-01'),
+          dataValidade: new Date('2030-01-01'),
+          statusValidacao: StatusValidacao.VALIDADO,
+        }),
+      ),
+    ).toThrow(/imutável/i);
+  });
+
   it('deve rejeitar transição inválida de status', () => {
     const carga = criarCarga();
 
