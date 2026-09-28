@@ -5,7 +5,7 @@ import {
   StatusValidacao,
   ResultadoInspecao,
   UnidadeMedida,
-} from '/../enums.ts';
+} from '../../enums.js';
 import { DocumentoCarga } from './documento-carga.entity.js';
 import { Inspecao } from '../../entities/inspecao.entity.js';
 import { QuantidadeCarga } from '../../value-objects/quantidade-carga.vo.js';
