@@ -13,7 +13,7 @@ export class RealizarInspecaoUseCase {
     }
 
     const inspecao = new Inspecao({
-      id: input.id ?? crypto.randomUUID(),
+      id: `INS-${crypto.randomUUID()}`,
       dataSolicitacao: input.dataSolicitacao,
       dataRealizacao: input.dataRealizacao,
       inspetorId: input.inspetorId,

@@ -1,7 +1,6 @@
 import { StatusCarga, UnidadeMedida } from '../../domain/enums.js';
 
 export type RegistrarCargaInputDto = {
-  id?: string;
   codigoIdentificacao: string;
   produtoQuimicoId: string;
   quantidadeValor: number;

@@ -1,5 +1,4 @@
 export type CadastrarProdutoInputDto = {
-  id?: string;
   nome: string;
   descricao: string;
   grupoCompatibilidade: string;
