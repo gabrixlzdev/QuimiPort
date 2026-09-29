@@ -100,14 +100,18 @@ export class CargaQuimicaAggregate {
   podeLiberar(): { ok: boolean; motivos: string[] } {
     const motivos: string[] = [];
 
-    const documentosInvalidos = this.documentos.filter((documento) => {
-      const vencido = documento.estaVencido();
-      const valido = documento.statusValidacao === StatusValidacao.VALIDADO && !vencido;
-      return !valido;
-    });
-
-    if (documentosInvalidos.length > 0) {
+    if (this.documentos.length === 0) {
       motivos.push('Documentação incompleta ou vencida.');
+    } else {
+      const documentosInvalidos = this.documentos.filter((documento) => {
+        const vencido = documento.estaVencido();
+        const valido = documento.statusValidacao === StatusValidacao.VALIDADO && !vencido;
+        return !valido;
+      });
+
+      if (documentosInvalidos.length > 0) {
+        motivos.push('Documentação incompleta ou vencida.');
+      }
     }
 
     const temInspecaoAprovada = this.inspecoes.some((inspecao) => inspecao.resultado === ResultadoInspecao.APROVADO);
