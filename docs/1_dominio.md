@@ -88,7 +88,7 @@ O escopo atual contempla o desenho arquitetural, a modelagem de domínio com Dom
 
 ## 1.8 Ciclo de Vida / Fluxo de Status da Carga Química
 
-A máquina de estados da Carga Química no QuimiPort é fechada e exclusiva: apenas os 8 status oficiais e as 16 transições permitidas são válidas. A intenção da modelagem é impedir transições arbitrárias e manter a rastreabilidade operacional de forma auditável.
+A máquina de estados da Carga Química no QuimiPort é fechada e exclusiva: apenas os 8 status oficiais e as 11 transições permitidas são válidas, alinhadas estritamente ao fluxo definido no enunciado do Tech Challenge Fase 2. A intenção da modelagem é impedir transições arbitrárias e manter a rastreabilidade operacional de forma auditável.
 
 ### Status oficiais
 
@@ -104,7 +104,8 @@ A máquina de estados da Carga Química no QuimiPort é fechada e exclusiva: ape
 ### Regras de transição e terminalidade
 
 - `FINALIZADA` e `CANCELADA` são estados terminais e imutáveis.
-- Qualquer transição fora da lista de 16 caminhos deve ser tratada como inválida pela máquina de estados.
+- `BLOQUEADA` só é alcançável a partir de `EM_INSPECAO` (irregularidade na inspeção) — nenhum outro status transita diretamente para `BLOQUEADA`, em conformidade estrita com o enunciado da Fase 2.
+- Qualquer transição fora da lista de 11 caminhos deve ser tratada como inválida pela máquina de estados.
 - Na Fase 2, o desbloqueio operacional da carga fica postergado; portanto, uma carga `BLOQUEADA` só pode ser alterada para `CANCELADA`.
 - Não há retorno de `FINALIZADA` ou `CANCELADA` para outro estado.
 
@@ -114,11 +115,9 @@ stateDiagram-v2
 
     AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
     AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
-    AGUARDANDO_DOCUMENTACAO --> BLOQUEADA: Bloqueio Preventivo
 
     DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
     DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
-    DOCUMENTACAO_VALIDADA --> BLOQUEADA: Bloqueio Preventivo
 
     EM_INSPECAO --> LIBERADA: Parecer Favorável
     EM_INSPECAO --> CANCELADA: Cancelamento
@@ -126,11 +125,8 @@ stateDiagram-v2
 
     LIBERADA --> EM_MOVIMENTACAO: Início do Transporte
     LIBERADA --> CANCELADA: Cancelamento
-    LIBERADA --> BLOQUEADA: Interdição Operacional
 
     EM_MOVIMENTACAO --> FINALIZADA: Conclusão Operacional
-    EM_MOVIMENTACAO --> CANCELADA: Cancelamento
-    EM_MOVIMENTACAO --> BLOQUEADA: Interdição na Movimentação
 
     BLOQUEADA --> CANCELADA: Cancelamento Definitivo (Fase 2)
 

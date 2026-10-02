@@ -14,7 +14,7 @@ flowchart LR
   Gestor --> UC2[Inativar Produto Químico]
   Gestor --> UC3[Registrar Carga Química]
   Gestor --> UC6[Liberar Carga Química]
-  Gestor --> UC7[Bloquear ou Desbloquear Carga Química]
+  Gestor --> UC7[Cancelar Carga Bloqueada]
 
   Operador --> UC3
 
@@ -30,7 +30,7 @@ flowchart LR
   UC4 -->|Saída Esperada| S4([Documento anexado - carga em EM_ANALISE])
   UC5 -->|Saída Esperada| S5([Parecer registrado - EM_INSPECAO ou BLOQUEADA])
   UC6 -->|Saída Esperada| S6([Carga com status LIBERADA])
-  UC7 -->|Saída Esperada| S7([Carga com status BLOQUEADA ou em reanálise])
+  UC7 -->|Saída Esperada| S7([Carga com status CANCELADA - único destino a partir de BLOQUEADA])
   UC8 -->|Saída Esperada| S8([Listagem de cargas + histórico de status])
 ```
 ---
@@ -151,20 +151,21 @@ flowchart LR
 
 ---
 
-### UC-007 — Bloquear ou Desbloquear Carga Química
+### UC-007 — Cancelar Carga Bloqueada
 
-- **Objetivo:** Interromper imediatamente qualquer movimentação da carga em caso de inconformidade ou liberar após saneamento.
+- **Objetivo:** Formalizar o cancelamento definitivo de uma carga que foi bloqueada por irregularidade na inspeção, já que a Fase 2 não contempla desbloqueio operacional — `BLOQUEADA` só é alcançada a partir de `EM_INSPECAO` (UC-005) e só evolui para `CANCELADA`.
 - **Ator Principal:** Gestor Operacional.
-- **Entrada Esperada:** `cargaId`, `motivoBloqueio` (ou `parecerDesbloqueio`).
-- **Saída Esperada:** Carga com status alterado para `BLOQUEADA` (ou retornada para reanálise).
+- **Entrada Esperada:** `cargaId`, `motivoCancelamento`.
+- **Saída Esperada:** Carga com status alterado para `CANCELADA`.
 - **Fluxo Principal:**
-  1. O gestor aciona o bloqueio preventivo ou o sistema bloqueia automaticamente por falha técnica/documental.
-  2. O status altera para `BLOQUEADA`.
-  3. Qualquer tentativa de movimentação, transbordo ou liberação é estritamente impedida (RN-CRQ-10).
-  4. Após a correção das irregularidades, o gestor pode desbloquear a carga para nova análise.
+  1. A carga chega ao status `BLOQUEADA` automaticamente a partir de um parecer de inspeção reprovado (UC-005), não por ação direta do gestor.
+  2. Qualquer tentativa de movimentação, transbordo ou liberação é estritamente impedida enquanto a carga estiver `BLOQUEADA` (RN-CRQ-10).
+  3. O gestor registra o cancelamento definitivo, informando o motivo.
+  4. O status altera para `CANCELADA` — único destino possível a partir de `BLOQUEADA` nesta fase.
 - **Regras de Negócio Relacionadas:** RN-CRQ-10, RN-CRQ-11.
 - **Possíveis Erros ou Exceções:**
-  - Tentativa de movimentar uma carga com status `BLOQUEADA` (sistema bloqueia e emite alerta de segurança).
+  - Tentativa de movimentar ou liberar uma carga com status `BLOQUEADA` (sistema bloqueia e emite alerta de segurança).
+  - Tentativa de desbloquear a carga para reanálise — não suportado na Fase 2; postergado para a Fase 3.
   - Tentativa de alterar o status de uma carga que foi `CANCELADA` (RN-CRQ-11).
 
 ---
@@ -195,11 +196,9 @@ stateDiagram-v2
 
     AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
     AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
-    AGUARDANDO_DOCUMENTACAO --> BLOQUEADA: Bloqueio Preventivo
 
     DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
     DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
-    DOCUMENTACAO_VALIDADA --> BLOQUEADA: Bloqueio Preventivo
 
     EM_INSPECAO --> LIBERADA: Parecer Favorável
     EM_INSPECAO --> CANCELADA: Cancelamento
@@ -207,11 +206,8 @@ stateDiagram-v2
 
     LIBERADA --> EM_MOVIMENTACAO: Início do Transporte
     LIBERADA --> CANCELADA: Cancelamento
-    LIBERADA --> BLOQUEADA: Interdição Operacional
 
     EM_MOVIMENTACAO --> FINALIZADA: Conclusão Operacional
-    EM_MOVIMENTACAO --> CANCELADA: Cancelamento
-    EM_MOVIMENTACAO --> BLOQUEADA: Interdição na Movimentação
 
     BLOQUEADA --> CANCELADA: Cancelamento Definitivo (Fase 2)
 
@@ -225,21 +221,16 @@ stateDiagram-v2
 | :----------- | :-------------------- | :------------- | :----------------------------------------- |
 | **`AGUARDANDO_DOCUMENTACAO`** | `ValidarDocumentos` | `DOCUMENTACAO_VALIDADA` | Documentação obrigatória e dados do registro devem estar consistentes para avançar. |
 | **`AGUARDANDO_DOCUMENTACAO`** | `CancelarCarga` | `CANCELADA` | Cancelamento permitido enquanto a carga ainda não finalizou etapa operacional. |
-| **`AGUARDANDO_DOCUMENTACAO`** | `BloquearCarga` | `BLOQUEADA` | Bloqueio preventivo pode ocorrer quando há pendências operacionais ou risco de irregularidade. |
 | **`DOCUMENTACAO_VALIDADA`** | `SolicitarInspecao` | `EM_INSPECAO` | A carga deve ter documentação válida e sem pendências antes da inspeção. |
 | **`DOCUMENTACAO_VALIDADA`** | `CancelarCarga` | `CANCELADA` | Cancelamento válido quando a operação é abortada após validação documental. |
-| **`DOCUMENTACAO_VALIDADA`** | `BloquearCarga` | `BLOQUEADA` | Interdição operacional ou risco documental pode bloquear a carga antes da inspeção. |
 | **`EM_INSPECAO`** | `LiberarCarga` | `LIBERADA` | Parecer de inspeção favorável e condições operacionais atendidas. |
 | **`EM_INSPECAO`** | `CancelarCarga` | `CANCELADA` | Cancelamento permitido quando a carga deixa de ser viável após inspeção. |
-| **`EM_INSPECAO`** | `BloquearCarga` | `BLOQUEADA` | Irregularidade técnica ou operacional provoca bloqueio imediato. |
+| **`EM_INSPECAO`** | `BloquearCarga` | `BLOQUEADA` | Irregularidade técnica ou operacional provoca bloqueio imediato. **Único ponto de entrada para `BLOQUEADA`**, conforme o enunciado da Fase 2. |
 | **`LIBERADA`** | `IniciarMovimentacao` | `EM_MOVIMENTACAO` | A carga já foi liberada e segue para transporte ou embarque. |
 | **`LIBERADA`** | `CancelarCarga` | `CANCELADA` | Cancelamento válido antes da conclusão da movimentação. |
-| **`LIBERADA`** | `BloquearCarga` | `BLOQUEADA` | Interdição preventiva deve bloquear a carga e impedir continuidade da operação. |
-| **`EM_MOVIMENTACAO`** | `ConcluirOperacao` | `FINALIZADA` | Conclusão operacional do ciclo de transporte/desembarque. |
-| **`EM_MOVIMENTACAO`** | `CancelarCarga` | `CANCELADA` | Cancelamento válido durante a movimentação, se a operação for interrompida. |
-| **`EM_MOVIMENTACAO`** | `BloquearCarga` | `BLOQUEADA` | Interdição na movimentação exige bloqueio e sinal de risco operacional. |
+| **`EM_MOVIMENTACAO`** | `ConcluirOperacao` | `FINALIZADA` | Conclusão operacional do ciclo de transporte/desembarque. Estado terminal; sem saída para `CANCELADA` ou `BLOQUEADA` a partir daqui. |
 | **`BLOQUEADA`** | `CancelarCarga` | `CANCELADA` | **Fase 2:** a única saída permitida do bloqueio é o cancelamento definitivo. |
 | **`FINALIZADA`** | _Qualquer ação_ | _Nenhum_ | **ESTADO TERMINAL:** não aceita nenhuma transição posterior. |
 | **`CANCELADA`** | _Qualquer ação_ | _Nenhum_ | **ESTADO TERMINAL:** não aceita nenhuma transição posterior. |
 
-> Regras de validação: a máquina de estados do QuimiPort aceita apenas as 16 transições acima. Qualquer outro caminho deve ser rejeitado explicitamente como transição inválida. O desbloqueio operacional de cargas fica postergado para a Fase 3; na Fase 2, `BLOQUEADA` somente pode evoluir para `CANCELADA`. 
+> Regras de validação: a máquina de estados do QuimiPort aceita apenas as 11 transições acima — alinhadas estritamente ao fluxo principal e aos fluxos alternativos definidos no enunciado do Tech Challenge Fase 2. Qualquer outro caminho deve ser rejeitado explicitamente como transição inválida. `BLOQUEADA` só é alcançável a partir de `EM_INSPECAO`. O desbloqueio operacional de cargas fica postergado para a Fase 3; na Fase 2, `BLOQUEADA` somente pode evoluir para `CANCELADA`.

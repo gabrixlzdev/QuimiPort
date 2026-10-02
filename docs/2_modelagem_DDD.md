@@ -184,11 +184,9 @@ stateDiagram-v2
 
     AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
     AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
-    AGUARDANDO_DOCUMENTACAO --> BLOQUEADA: Bloqueio Preventivo
 
     DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
     DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
-    DOCUMENTACAO_VALIDADA --> BLOQUEADA: Bloqueio Preventivo
 
     EM_INSPECAO --> LIBERADA: Parecer Favorável
     EM_INSPECAO --> CANCELADA: Cancelamento
@@ -196,11 +194,8 @@ stateDiagram-v2
 
     LIBERADA --> EM_MOVIMENTACAO: Início do Transporte
     LIBERADA --> CANCELADA: Cancelamento
-    LIBERADA --> BLOQUEADA: Interdição Operacional
 
     EM_MOVIMENTACAO --> FINALIZADA: Conclusão Operacional
-    EM_MOVIMENTACAO --> CANCELADA: Cancelamento
-    EM_MOVIMENTACAO --> BLOQUEADA: Interdição na Movimentação
 
     BLOQUEADA --> CANCELADA: Cancelamento Definitivo (Fase 2)
 
@@ -208,7 +203,7 @@ stateDiagram-v2
     CANCELADA --> [*]
 ```
 
-Observação: qualquer transição fora desses 16 caminhos deve ser rejeitada pela máquina de estados de domínio, e estados finais não aceitam alterações posteriores.
+Observação: qualquer transição fora desses 11 caminhos deve ser rejeitada pela máquina de estados de domínio, e estados finais não aceitam alterações posteriores. `BLOQUEADA` só é alcançável a partir de `EM_INSPECAO`, em conformidade estrita com o fluxo definido no enunciado da Fase 2.
 
 ---
 
