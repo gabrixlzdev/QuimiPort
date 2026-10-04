@@ -12,6 +12,10 @@ import { BloquearCargaUseCase } from './application/use-cases/cargas/bloquear-ca
 import { RealizarInspecaoUseCase } from './application/use-cases/inspecoes/realizar-inspecao.use-case.js';
 import { InMemoryProdutoQuimicoRepository } from './infrastructure/database/repositories/produto-quimico.repository.js';
 import { InMemoryCargaQuimicaRepository } from './infrastructure/database/repositories/carga-quimica.repository.js';
+import { ProdutoQuimicoOrmEntity } from './infrastructure/database/entities/produto-quimico.orm-entity.js';
+import { CargaQuimicaOrmEntity } from './infrastructure/database/entities/carga-quimica.orm-entity.js';
+import { DocumentoCargaOrmEntity } from './infrastructure/database/entities/documento-carga.orm-entity.js';
+import { InspecaoOrmEntity } from './infrastructure/database/entities/inspecao.orm-entity.js';
 import { ProdutosController } from './presentation/controllers/produtos.controller.js';
 import { CargasController } from './presentation/controllers/cargas.controller.js';
 
@@ -30,7 +34,12 @@ import { CargasController } from './presentation/controllers/cargas.controller.j
         username: config.get<string>('POSTGRES_USER'),
         password: config.get<string>('POSTGRES_PASSWORD'),
         database: config.get<string>('POSTGRES_DB'),
-        entities: [],
+        entities: [
+          ProdutoQuimicoOrmEntity,
+          CargaQuimicaOrmEntity,
+          DocumentoCargaOrmEntity,
+          InspecaoOrmEntity,
+        ],
         synchronize: true,
       }),
     }),
