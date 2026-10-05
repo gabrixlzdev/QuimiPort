@@ -12,8 +12,17 @@ export type CargaQuimicaAggregateProps = {
   origem: string;
   destino: string;
   dataEntrada: Date;
+  dataCriacao?: Date;
   grupoCompatibilidade: string;
   status?: StatusCarga;
+};
+
+export type HistoricoStatusCarga = {
+  statusAnterior: StatusCarga | null;
+  statusNovo: StatusCarga;
+  data: Date;
+  responsavelId: string;
+  motivo: string;
 };
 
 export class CargaQuimicaAggregate {
@@ -25,11 +34,24 @@ export class CargaQuimicaAggregate {
   public readonly origem: string;
   public readonly destino: string;
   public readonly dataEntrada: Date;
+  public readonly dataCriacao: Date;
   public readonly grupoCompatibilidade: string;
 
   public documentos: DocumentoCarga[] = [];
   public inspecoes: Inspecao[] = [];
-  public status: StatusCarga;
+  private statusAtual: StatusCarga;
+  private readonly eventosStatus: HistoricoStatusCarga[] = [];
+
+  get status(): StatusCarga {
+    return this.statusAtual;
+  }
+
+  get historicoStatus(): readonly HistoricoStatusCarga[] {
+    return this.eventosStatus.map((evento) => ({
+      ...evento,
+      data: new Date(evento.data),
+    }));
+  }
 
   constructor(props: CargaQuimicaAggregateProps) {
     if (!props.id || !props.codigoIdentificacao || !props.produtoQuimicoId || !props.responsavelTecnicoId) {
@@ -44,12 +66,23 @@ export class CargaQuimicaAggregate {
     this.origem = props.origem;
     this.destino = props.destino;
     this.dataEntrada = props.dataEntrada;
+    this.dataCriacao = props.dataCriacao ?? new Date();
+    if (Number.isNaN(this.dataCriacao.getTime())) {
+      throw new Error('Data de criação da carga inválida.');
+    }
     this.grupoCompatibilidade = props.grupoCompatibilidade;
-    this.status = props.status ?? StatusCarga.AGUARDANDO_DOCUMENTACAO;
+    this.statusAtual = props.status ?? StatusCarga.AGUARDANDO_DOCUMENTACAO;
+    this.eventosStatus.push({
+      statusAnterior: null,
+      statusNovo: this.statusAtual,
+      data: new Date(this.dataCriacao),
+      responsavelId: this.responsavelTecnicoId,
+      motivo: 'Carga criada.',
+    });
   }
 
   private static readonly transicoesPermitidas: Record<StatusCarga, StatusCarga[]> = {
-    [StatusCarga.AGUARDANDO_DOCUMENTACAO]: [StatusCarga.DOCUMENTACAO_VALIDADA, StatusCarga.CANCELADA, StatusCarga.BLOQUEADA],
+    [StatusCarga.AGUARDANDO_DOCUMENTACAO]: [StatusCarga.DOCUMENTACAO_VALIDADA, StatusCarga.EM_INSPECAO, StatusCarga.CANCELADA, StatusCarga.BLOQUEADA],
     [StatusCarga.DOCUMENTACAO_VALIDADA]: [StatusCarga.EM_INSPECAO, StatusCarga.CANCELADA, StatusCarga.BLOQUEADA],
     [StatusCarga.EM_INSPECAO]: [StatusCarga.LIBERADA, StatusCarga.CANCELADA, StatusCarga.BLOQUEADA],
     [StatusCarga.LIBERADA]: [StatusCarga.EM_MOVIMENTACAO, StatusCarga.CANCELADA, StatusCarga.BLOQUEADA],
@@ -59,7 +92,19 @@ export class CargaQuimicaAggregate {
     [StatusCarga.CANCELADA]: [],
   };
 
-  changeStatus(novoStatus: StatusCarga): void {
+  changeStatus(
+    novoStatus: StatusCarga,
+    responsavelId: string,
+    motivo: string,
+    data: Date = new Date(),
+  ): void {
+    if (!responsavelId?.trim() || !motivo?.trim()) {
+      throw new Error('Responsável e motivo são obrigatórios para alterar o status.');
+    }
+    if (!(data instanceof Date) || Number.isNaN(data.getTime())) {
+      throw new Error('Data da transição de status inválida.');
+    }
+
     if (this.status === StatusCarga.FINALIZADA || this.status === StatusCarga.CANCELADA) {
       throw new Error('Carga finalizada ou cancelada não pode sofrer novas transições.');
     }
@@ -69,7 +114,14 @@ export class CargaQuimicaAggregate {
       throw new Error(`Transição de status inválida: ${this.status} -> ${novoStatus}.`);
     }
 
-    this.status = novoStatus;
+    this.eventosStatus.push({
+      statusAnterior: this.statusAtual,
+      statusNovo: novoStatus,
+      data: new Date(data),
+      responsavelId: responsavelId.trim(),
+      motivo: motivo.trim(),
+    });
+    this.statusAtual = novoStatus;
   }
 
   anexarDocumento(documento: DocumentoCarga): void {
@@ -85,16 +137,26 @@ export class CargaQuimicaAggregate {
       throw new Error('Não é possível registrar inspeções em carga cancelada ou finalizada.');
     }
 
-    this.inspecoes.push(inspecao);
-
     if (inspecao.resultado === ResultadoInspecao.REPROVADO) {
-      this.status = StatusCarga.BLOQUEADA;
-      return;
+      this.changeStatus(
+        StatusCarga.BLOQUEADA,
+        inspecao.inspetorId,
+        inspecao.observacoes || 'Inspeção reprovada.',
+        inspecao.dataRealizacao,
+      );
+    } else if (
+      this.status === StatusCarga.AGUARDANDO_DOCUMENTACAO ||
+      this.status === StatusCarga.DOCUMENTACAO_VALIDADA
+    ) {
+      this.changeStatus(
+        StatusCarga.EM_INSPECAO,
+        inspecao.inspetorId,
+        inspecao.observacoes || 'Inspeção realizada.',
+        inspecao.dataRealizacao,
+      );
     }
 
-    if (this.status === StatusCarga.AGUARDANDO_DOCUMENTACAO || this.status === StatusCarga.DOCUMENTACAO_VALIDADA) {
-      this.status = StatusCarga.EM_INSPECAO;
-    }
+    this.inspecoes.push(inspecao);
   }
 
   podeLiberar(): { ok: boolean; motivos: string[] } {
@@ -122,7 +184,7 @@ export class CargaQuimicaAggregate {
     return { ok: motivos.length === 0, motivos };
   }
 
-  liberarCarga(justificativa: string): void {
+  liberarCarga(justificativa: string, responsavelId: string): void {
     if (!justificativa || justificativa.trim().length === 0) {
       throw new Error('Justificativa de liberação é obrigatória.');
     }
@@ -132,14 +194,14 @@ export class CargaQuimicaAggregate {
       throw new Error(`Impossível liberar: ${resultado.motivos.join('; ')}`);
     }
 
-    this.changeStatus(StatusCarga.LIBERADA);
+    this.changeStatus(StatusCarga.LIBERADA, responsavelId, justificativa);
   }
 
-  bloquearCarga(motivo: string): void {
+  bloquearCarga(motivo: string, responsavelId: string): void {
     if (!motivo || motivo.trim().length === 0) {
       throw new Error('Motivo do bloqueio é obrigatório.');
     }
 
-    this.changeStatus(StatusCarga.BLOQUEADA);
+    this.changeStatus(StatusCarga.BLOQUEADA, responsavelId, motivo);
   }
 }

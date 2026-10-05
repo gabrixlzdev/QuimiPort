@@ -31,6 +31,19 @@ export type ValidarDocumentacaoInputDto = {
   documentoId: string;
 };
 
+export type AnexarDocumentoInputDto = {
+  cargaQuimicaId: string;
+  tipoDocumento: string;
+  numeroReferencia: string;
+  urlArquivo: string;
+  dataEmissao: string;
+  dataValidade: string;
+};
+
+export type DocumentoCargaOutputDto = {
+  id: string;
+};
+
 export type RealizarInspecaoInputDto = {
   cargaQuimicaId: string;
   id?: string;
@@ -44,9 +57,11 @@ export type RealizarInspecaoInputDto = {
 export type LiberarCargaInputDto = {
   cargaQuimicaId: string;
   justificativa: string;
+  responsavelId: string;
 };
 
 export type BloquearCargaInputDto = {
   cargaQuimicaId: string;
   motivo: string;
+  responsavelId: string;
 };

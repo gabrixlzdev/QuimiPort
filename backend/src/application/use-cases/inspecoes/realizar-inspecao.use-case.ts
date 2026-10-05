@@ -1,5 +1,6 @@
 import { ResultadoInspecao } from '../../../domain/enums.js';
 import { Inspecao } from '../../../domain/entities/inspecao.entity.js';
+import { generateEntityId } from '../../id-generator.js';
 import { CargaQuimicaRepository } from '../../../domain/repositories/carga-quimica.repository.interface.js';
 import { RealizarInspecaoInputDto } from '../../dtos/carga-quimica.dto.js';
 
@@ -13,7 +14,7 @@ export class RealizarInspecaoUseCase {
     }
 
     const inspecao = new Inspecao({
-      id: `INS-${crypto.randomUUID()}`,
+      id: generateEntityId('INS'),
       dataSolicitacao: input.dataSolicitacao,
       dataRealizacao: input.dataRealizacao,
       inspetorId: input.inspetorId,
