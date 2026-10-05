@@ -4,6 +4,7 @@ import { ValidarDocumentacaoUseCase } from '../../application/use-cases/cargas/v
 import { LiberarCargaUseCase } from '../../application/use-cases/cargas/liberar-carga.use-case.js';
 import { BloquearCargaUseCase } from '../../application/use-cases/cargas/bloquear-carga.use-case.js';
 import { RealizarInspecaoUseCase } from '../../application/use-cases/inspecoes/realizar-inspecao.use-case.js';
+import { AnexarDocumentoUseCase } from '../../application/use-cases/cargas/anexar-documento.use-case.js';
 import * as cargaQuimicaDto from '../../application/dtos/carga-quimica.dto.js';
 
 @Controller('cargas')
@@ -14,6 +15,7 @@ export class CargasController {
     private readonly realizarInspecaoUseCase: RealizarInspecaoUseCase,
     private readonly liberarCargaUseCase: LiberarCargaUseCase,
     private readonly bloquearCargaUseCase: BloquearCargaUseCase,
+    private readonly anexarDocumentoUseCase: AnexarDocumentoUseCase,
   ) {}
 
   @Post()
@@ -33,6 +35,14 @@ export class CargasController {
       documentoId,
     });
     return { mensagem: 'Documento validado com sucesso.' };
+  }
+
+  @Post(':id/documentos')
+  async anexarDocumento(
+    @Param('id') cargaQuimicaId: string,
+    @Body() body: Omit<cargaQuimicaDto.AnexarDocumentoInputDto, 'cargaQuimicaId'>,
+  ): Promise<cargaQuimicaDto.DocumentoCargaOutputDto> {
+    return this.anexarDocumentoUseCase.execute({ ...body, cargaQuimicaId });
   }
 
   @Post(':id/inspecoes')

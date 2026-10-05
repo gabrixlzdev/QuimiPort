@@ -10,7 +10,7 @@ export class BloquearCargaUseCase {
       throw new Error('Carga química não encontrada.');
     }
 
-    carga.bloquearCarga(input.motivo);
+    carga.bloquearCarga(input.motivo, input.responsavelId);
     await this.cargaRepository.salvar(carga);
   }
 }

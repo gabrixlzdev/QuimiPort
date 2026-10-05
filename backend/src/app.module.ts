@@ -10,8 +10,13 @@ import { ValidarDocumentacaoUseCase } from './application/use-cases/cargas/valid
 import { LiberarCargaUseCase } from './application/use-cases/cargas/liberar-carga.use-case.js';
 import { BloquearCargaUseCase } from './application/use-cases/cargas/bloquear-carga.use-case.js';
 import { RealizarInspecaoUseCase } from './application/use-cases/inspecoes/realizar-inspecao.use-case.js';
+import { AnexarDocumentoUseCase } from './application/use-cases/cargas/anexar-documento.use-case.js';
+import { CadastrarResponsavelTecnicoUseCase } from './application/use-cases/responsaveis/cadastrar-responsavel-tecnico.use-case.js';
+import { CadastrarAreaArmazenamentoUseCase } from './application/use-cases/areas/cadastrar-area-armazenamento.use-case.js';
 import { InMemoryProdutoQuimicoRepository } from './infrastructure/database/repositories/produto-quimico.repository.js';
 import { InMemoryCargaQuimicaRepository } from './infrastructure/database/repositories/carga-quimica.repository.js';
+import { InMemoryResponsavelTecnicoRepository } from './infrastructure/database/repositories/responsavel-tecnico.repository.js';
+import { InMemoryAreaArmazenamentoRepository } from './infrastructure/database/repositories/area-armazenamento.repository.js';
 import { ProdutoQuimicoOrmEntity } from './infrastructure/database/entities/produto-quimico.orm-entity.js';
 import { CargaQuimicaOrmEntity } from './infrastructure/database/entities/carga-quimica.orm-entity.js';
 import { DocumentoCargaOrmEntity } from './infrastructure/database/entities/documento-carga.orm-entity.js';
@@ -49,6 +54,8 @@ import { CargasController } from './presentation/controllers/cargas.controller.j
     AppService,
     InMemoryProdutoQuimicoRepository,
     InMemoryCargaQuimicaRepository,
+    InMemoryResponsavelTecnicoRepository,
+    InMemoryAreaArmazenamentoRepository,
     {
       provide: 'ProdutoQuimicoRepository',
       useExisting: InMemoryProdutoQuimicoRepository,
@@ -91,6 +98,21 @@ import { CargasController } from './presentation/controllers/cargas.controller.j
       provide: RealizarInspecaoUseCase,
       useFactory: (repo: InMemoryCargaQuimicaRepository) => new RealizarInspecaoUseCase(repo),
       inject: [InMemoryCargaQuimicaRepository],
+    },
+    {
+      provide: AnexarDocumentoUseCase,
+      useFactory: (repo: InMemoryCargaQuimicaRepository) => new AnexarDocumentoUseCase(repo),
+      inject: [InMemoryCargaQuimicaRepository],
+    },
+    {
+      provide: CadastrarResponsavelTecnicoUseCase,
+      useFactory: (repo: InMemoryResponsavelTecnicoRepository) => new CadastrarResponsavelTecnicoUseCase(repo),
+      inject: [InMemoryResponsavelTecnicoRepository],
+    },
+    {
+      provide: CadastrarAreaArmazenamentoUseCase,
+      useFactory: (repo: InMemoryAreaArmazenamentoRepository) => new CadastrarAreaArmazenamentoUseCase(repo),
+      inject: [InMemoryAreaArmazenamentoRepository],
     },
   ],
 })
