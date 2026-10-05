@@ -3,6 +3,7 @@ import { ClassificacaoRisco } from './classificacao-risco.vo.js';
 import { CodigoIdentificacao } from './codigo-identificacao.vo.js';
 import { RegistroProfissional } from './registro-profissional.vo.js';
 import { QuantidadeCarga } from './quantidade-carga.vo.js';
+import { Cpf } from './cpf.vo.js';
 import { UnidadeMedida } from '../enums.js';
 
 describe('Value Objects', () => {
@@ -32,5 +33,24 @@ describe('Value Objects', () => {
 
   it('deve rejeitar quantidade de carga menor ou igual a zero', () => {
     expect(() => new QuantidadeCarga(0, UnidadeMedida.QUILOGRAMAS)).toThrow();
+  });
+
+  it('deve aceitar cpf valido', () => {
+    expect(() => new Cpf('529.982.247-25')).not.toThrow();
+  });
+
+  it('deve rejeitar cpf com digitos verificadores invalidos', () => {
+    expect(() => new Cpf('123.456.789-00')).toThrow();
+  });
+
+  it('deve rejeitar cpf com todos os digitos iguais', () => {
+    expect(() => new Cpf('111.111.111-11')).toThrow();
+  });
+
+  it('deve mascarar o cpf ao converter para string ou json', () => {
+    const cpf = new Cpf('529.982.247-25');
+    expect(cpf.mascarado()).toBe('***.***.247-25');
+    expect(`${cpf}`).toBe('***.***.247-25');
+    expect(JSON.stringify({ cpf })).toBe('{"cpf":"***.***.247-25"}');
   });
 });

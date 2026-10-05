@@ -90,9 +90,20 @@ classDiagram
     class ResponsavelTecnicoEntity {
         -ResponsavelTecnicoId id
         -string nome
-        -string registroConselho
-        -string ufConselho
+        -CPF cpf
+        -RegistroProfissionalVO registroProfissional
         -string emailContato
+    }
+
+    class AreaArmazenamentoEntity {
+        -AreaArmazenamentoId id
+        -string nome
+        -string codigo
+        -string tipo
+        -CargaQuimicaId cargaQuimicaId
+        -number capacidadeMaxima
+        -number quantidadeOcupada
+        -StatusAreaArmazenamento status
     }
 
     CargaQuimicaAggregateRoot "1" *-- "many" DocumentoCargaEntity : contem
@@ -101,6 +112,7 @@ classDiagram
     CargaQuimicaAggregateRoot ..> ResponsavelTecnicoEntity : referencia por ResponsavelTecnicoId
     CargaQuimicaAggregateRoot ..> ProdutoQuimicoEntity : referencia por ProdutoQuimicoId
     ProdutoQuimicoEntity "1" *-- "1" ClassificacaoRiscoVO : possui
+    AreaArmazenamentoEntity ..> CargaQuimicaAggregateRoot : referencia por CargaQuimicaId
 ```
 Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `CargaQuimica` (referenciado por id). Veja [2.8 Notas Arquiteturais] para justificativa.
 
@@ -137,6 +149,20 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
    - Atributos: `id`, `dataSolicitacao`, `dataRealizacao`, `inspetorId`, `resultado` (`PENDENTE|APROVADO|REPROVADO`), `observacoes`.  
    - Regras: `REPROVADO` exige justificativa e deve disparar bloqueio da carga.
 
+5. ResponsavelTecnico  
+   - Responsabilidade: Representar o profissional legalmente habilitado que responde tecnicamente pela carga química perante os órgãos reguladores.  
+   - Identidade: `ResponsavelTecnicoId` (UUID v4).  
+   - Atributos: `id`, `nome`, `cpf`, `registroProfissional` (CRQ/CREA + UF), `emailContato` (opcional).  
+   - Regras: RN-RTC-02 — não pode ser cadastrado sem `cpf` válido (dígitos verificadores conferidos pelo VO `CPF`); RN-RTC-03 — não pode ser cadastrado sem `registroProfissional` válido (VO `RegistroProfissional`).  
+   - Relacionamentos: Referenciado por `CargaQuimica` através de `responsavelTecnicoId`; não faz parte do agregado (ver 2.8).
+
+6. AreaArmazenamento  
+   - Responsabilidade: Representar o espaço físico do pátio/armazém onde uma carga química fica alocada, controlando ocupação e capacidade.  
+   - Identidade: `AreaArmazenamentoId` (UUID v4).  
+   - Atributos: `id`, `nome`, `codigo`, `tipo` (`PATIO|ARMAZEM|AREA_SEGURA`), `cargaQuimicaId`, `capacidadeMaxima`, `quantidadeOcupada`, `status` (`COM_ESPACO|LOTADA`).  
+   - Regras: RN-ARM-02 — status inicial sempre `COM_ESPACO`; RN-ARM-03 — não pode existir sem `cargaQuimicaId` associado; RN-ARM-04 — `quantidadeOcupada` deve ser maior que zero; RN-ARM-05 — `quantidadeOcupada` nunca pode exceder `capacidadeMaxima`.  
+   - Relacionamentos: Referencia `CargaQuimica` por `cargaQuimicaId`; não faz parte do agregado `CargaQuimica` pelo mesmo motivo de `ProdutoQuimico` (ver 2.8).
+
 ---
 
 ## 2.3 Objetos de Valor (Value Objects) — definições e invariantes
@@ -149,15 +175,20 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
    - Atributos: `valor: number`, `unidade: UnidadeMedida`.  
    - Invariante: `valor > 0`.
 
-3. ResponsavelTecnico  
-   - Atributos: `nome`, `registroConselho`, `ufConselho`, `emailContato`.  
+3. RegistroProfissional  
+   - Atributos: `valor` (ex.: "CRQ 12345"), `ufConselho`.  
    - Invariantes:
-     - `registroConselho` não vazio e segue o padrão: `^(?i)(CRQ|CREA)[\s-]?\d{3,7}$` (case-insensitive).  
-       - Se sua ferramenta não aceita `(?i)`, use `^(CRQ|CREA)[\s-]?\d{3,7}$` e valide uppercase.  
+     - `valor` não vazio e segue o padrão: `^(CRQ|CREA)[\s-]?\d{3,7}$` (case-insensitive).  
      - `ufConselho` deve estar entre as UFs válidas: regex:  
        `^(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$`
 
-4. CodigoIdentificacao  
+4. CPF  
+   - Atributo: `valor` (string, 11 dígitos sem máscara).  
+   - Invariantes:
+     - Deve conter exatamente 11 dígitos e não pode ser uma sequência de dígitos repetidos (ex.: `00000000000`).
+     - Os dois dígitos verificadores devem ser válidos segundo o algoritmo oficial (módulo 11), não apenas a quantidade de dígitos.
+
+5. CodigoIdentificacao  
    - Atributo: `codigo` (string).  
    - Invariante: alfanumérico 8–20 chars, sem espaços/acentos: `^[A-Za-z0-9]{8,20}$`.
 
@@ -219,6 +250,7 @@ Enum oficial do sistema QuimiPort:
 - StatusValidacao = { PENDENTE, VALIDADO, REJEITADO }
 - ResultadoInspecao = { PENDENTE, APROVADO, REPROVADO }
 - UnidadeMedida = { TONELADAS, QUILOGRAMAS, LITROS, METROS_CUBICOS }
+- StatusAreaArmazenamento = { COM_ESPACO, LOTADA }
 
 Documente esses enums de forma centralizada no repositório (ex.: src/domain/enums.ts) para evitar divergência.
 
@@ -263,26 +295,82 @@ export class CodigoIdentificacao {
 }
 ```
 
-Value Object: ResponsavelTecnico
+Value Object: RegistroProfissional
 ```typescript
-// name: src/domain/value-objects/ResponsavelTecnico.ts
-export class ResponsavelTecnico {
-  public readonly nome: string;
-  public readonly registroConselho: string;
+// name: src/domain/value-objects/registro-profissional.vo.ts
+export class RegistroProfissional {
+  public readonly valor: string;
   public readonly ufConselho: string;
+
+  private static readonly registroRegex = /^(CRQ|CREA)[\s-]?\d{3,7}$/i;
+  private static readonly ufRegex = /^(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$/i;
+
+  constructor(registro: string, ufConselho: string) {
+    if (!registro || !RegistroProfissional.registroRegex.test(registro)) {
+      throw new Error('Registro profissional inválido. Use CRQ/CREA com 3 a 7 dígitos.');
+    }
+    if (!RegistroProfissional.ufRegex.test(ufConselho)) {
+      throw new Error('UF do conselho inválida.');
+    }
+    this.valor = registro;
+    this.ufConselho = ufConselho.toUpperCase();
+  }
+}
+```
+
+Value Object: CPF
+```typescript
+// name: src/domain/value-objects/cpf.vo.ts
+export class Cpf {
+  public readonly valor: string;
+
+  constructor(valor: string) {
+    const digitos = (valor ?? '').replace(/\D/g, '');
+    if (!Cpf.temEstruturaValida(digitos) || !Cpf.temDigitosVerificadoresValidos(digitos)) {
+      throw new Error('CPF inválido.');
+    }
+    this.valor = digitos;
+  }
+
+  // valida estrutura (11 dígitos, não repetidos) e os 2 dígitos verificadores (módulo 11)
+  private static temEstruturaValida(digitos: string): boolean { /* ... */ return true; }
+  private static temDigitosVerificadoresValidos(digitos: string): boolean { /* ... */ return true; }
+}
+```
+
+Entity: ResponsavelTecnico
+```typescript
+// name: src/domain/entities/responsavel-tecnico.entity.ts
+export class ResponsavelTecnico {
+  public readonly id: string;
+  public readonly nome: string;
+  public readonly cpf: Cpf;
+  public readonly registroProfissional: RegistroProfissional;
   public readonly emailContato?: string;
 
-  private static readonly registroRegex = /^(?i)(CRQ|CREA)[\s-]?\d{3,7}$/;
-  private static readonly ufRegex = /^(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$/;
+  constructor(props: ResponsavelTecnicoProps) {
+    if (!props.id || !props.nome || !props.cpf || !props.registroProfissional) {
+      throw new Error('Responsável técnico inválido.');
+    }
+    // ... atribuição dos campos
+  }
+}
+```
 
-  constructor(nome: string, registroConselho: string, ufConselho: string, emailContato?: string) {
-    if (!nome || nome.trim().length === 0) throw new Error('Nome do responsável técnico é obrigatório.');
-    if (!new RegExp(ResponsavelTecnico.registroRegex).test(registroConselho)) throw new Error('Registro do conselho inválido.');
-    if (!ResponsavelTecnico.ufRegex.test(ufConselho)) throw new Error('UF inválida.');
-    this.nome = nome;
-    this.registroConselho = registroConselho;
-    this.ufConselho = ufConselho;
-    this.emailContato = emailContato;
+Entity: AreaArmazenamento
+```typescript
+// name: src/domain/entities/area-armazenamento.entity.ts
+export class AreaArmazenamento {
+  public readonly status: StatusAreaArmazenamento;
+  // id, nome, codigo, tipo, cargaQuimicaId, capacidadeMaxima, quantidadeOcupada
+
+  constructor(props: AreaArmazenamentoProps) {
+    if (!props.cargaQuimicaId) throw new Error('Área de armazenamento deve estar associada a uma carga química.');
+    if (!props.capacidadeMaxima || props.capacidadeMaxima <= 0) throw new Error('Capacidade máxima deve ser maior que zero.');
+    if (!props.quantidadeOcupada || props.quantidadeOcupada <= 0) throw new Error('Quantidade ocupada deve ser maior que zero.');
+    if (props.quantidadeOcupada > props.capacidadeMaxima) throw new Error('Quantidade ocupada não pode exceder a capacidade máxima da área.');
+    // status sempre inicia como COM_ESPACO (RN-ARM-02)
+    this.status = StatusAreaArmazenamento.COM_ESPACO;
   }
 }
 ```
@@ -384,7 +472,8 @@ Recomenda-se cobertura de testes unitários e alguns testes de integração para
 Testes unitários sugeridos:
 - VO:
   - CodigoIdentificacao: aceita formatos válidos e rejeita inválidos.
-  - ResponsavelTecnico: aceita CRQ/CREA válidos (ex.: "CRQ 12345") e rejeita UFs invalidas.
+  - RegistroProfissional: aceita CRQ/CREA válidos (ex.: "CRQ 12345") e rejeita UFs inválidas.
+  - CPF: aceita CPFs com dígitos verificadores válidos e rejeita sequências repetidas (ex.: "00000000000") ou dígitos verificadores incorretos.
   - ClassificacaoRisco.numeroONU: aceita 4 dígitos apenas.
 - Aggregate invariants:
   - Tentativa de liberar carga sem documentos válidos → erro.
@@ -414,5 +503,6 @@ Notas finais
 - Regex principais recap:
   - numeroONU: `^\d{4}$`  
   - codigoIdentificacao: `^[A-Za-z0-9]{8,20}$`  
-  - registroConselho (preferido, case-insensitive): `^(?i)(CRQ|CREA)[\s-]?\d{3,7}$`  (alternativa sem `(?i)` para sua ferramenta: `^(CRQ|CREA)[\s-]?\d{3,7}$`)  
-  - ufConselho (UFs BR): `^(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$`
+  - registroProfissional (case-insensitive): `^(CRQ|CREA)[\s-]?\d{3,7}$`  
+  - ufConselho (UFs BR): `^(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$`  
+  - cpf: 11 dígitos, não repetidos, com os 2 dígitos verificadores calculados pelo algoritmo módulo 11.

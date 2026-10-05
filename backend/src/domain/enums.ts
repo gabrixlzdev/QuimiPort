@@ -27,3 +27,8 @@ export enum UnidadeMedida {
   LITROS = 'LITROS',
   METROS_CUBICOS = 'METROS_CUBICOS',
 }
+
+export enum StatusAreaArmazenamento {
+  COM_ESPACO = 'COM_ESPACO',
+  LOTADA = 'LOTADA',
+}
