@@ -10,7 +10,7 @@ export class LiberarCargaUseCase {
       throw new Error('Carga química não encontrada.');
     }
 
-    carga.liberarCarga(input.justificativa);
+    carga.liberarCarga(input.justificativa, input.responsavelId);
     await this.cargaRepository.salvar(carga);
   }
 }

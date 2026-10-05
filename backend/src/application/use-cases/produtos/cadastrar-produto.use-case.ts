@@ -1,6 +1,7 @@
 import { ProdutoQuimico } from '../../../domain/entities/produto-quimico.entity.js';
 import { ClassificacaoRisco } from '../../../domain/value-objects/classificacao-risco.vo.js';
 import { ProdutoQuimicoRepository } from '../../../domain/repositories/produto-quimico.repository.interface.js';
+import { generateEntityId } from '../../id-generator.js';
 import {
   CadastrarProdutoInputDto,
   ProdutoQuimicoOutputDto,
@@ -20,7 +21,7 @@ export class CadastrarProdutoUseCase {
     }
 
     const produto = new ProdutoQuimico({
-      id: `PRQ-${crypto.randomUUID()}`,
+      id: generateEntityId('PRQ'),
       nome: input.nome,
       descricao: input.descricao,
       grupoCompatibilidade: input.grupoCompatibilidade,

@@ -21,6 +21,7 @@ describe('CargaQuimicaAggregate', () => {
       origem: 'Santos',
       destino: 'Rio',
       dataEntrada: new Date('2026-01-01T00:00:00Z'),
+      dataCriacao: new Date('2025-12-31T23:00:00Z'),
       grupoCompatibilidade: 'CLASSE_8',
     });
 
@@ -50,8 +51,23 @@ describe('CargaQuimicaAggregate', () => {
       }),
     );
 
-    expect(() => carga.liberarCarga('Liberado após validação')).not.toThrow();
+    expect(() =>
+      carga.liberarCarga('Liberado após validação', 'operador-1'),
+    ).not.toThrow();
     expect(carga.status).toBe(StatusCarga.LIBERADA);
+    expect(carga.historicoStatus.map((evento) => evento.statusNovo)).toEqual([
+      StatusCarga.AGUARDANDO_DOCUMENTACAO,
+      StatusCarga.EM_INSPECAO,
+      StatusCarga.LIBERADA,
+    ]);
+    expect(carga.historicoStatus[1]).toMatchObject({
+      responsavelId: 'inspetor-1',
+      motivo: 'Tudo conforme',
+    });
+    expect(carga.historicoStatus[2]).toMatchObject({
+      responsavelId: 'operador-1',
+      motivo: 'Liberado após validação',
+    });
   });
 
   it('deve bloquear carga quando a inspeção é reprovada', () => {
@@ -69,6 +85,12 @@ describe('CargaQuimicaAggregate', () => {
     );
 
     expect(carga.status).toBe(StatusCarga.BLOQUEADA);
+    expect(carga.historicoStatus.at(-1)).toMatchObject({
+      statusAnterior: StatusCarga.AGUARDANDO_DOCUMENTACAO,
+      statusNovo: StatusCarga.BLOQUEADA,
+      responsavelId: 'inspetor-1',
+      motivo: 'Embalagem danificada',
+    });
   });
 
   it('deve rejeitar tentativa de liberar sem documentação válida', () => {
@@ -85,9 +107,9 @@ describe('CargaQuimicaAggregate', () => {
       }),
     );
 
-    expect(() => carga.liberarCarga('Sem documentação válida')).toThrow(
-      /Documentação incompleta|Impossível liberar/i,
-    );
+    expect(() =>
+      carga.liberarCarga('Sem documentação válida', 'operador-1'),
+    ).toThrow(/Documentação incompleta|Impossível liberar/i);
   });
 
   it('deve rejeitar tentativa de liberar sem inspeção aprovada', () => {
@@ -105,14 +127,18 @@ describe('CargaQuimicaAggregate', () => {
       }),
     );
 
-    expect(() => carga.liberarCarga('Sem inspeção aprovada')).toThrow(
-      /Nenhuma inspeção aprovada|Impossível liberar/i,
-    );
+    expect(() =>
+      carga.liberarCarga('Sem inspeção aprovada', 'operador-1'),
+    ).toThrow(/Nenhuma inspeção aprovada|Impossível liberar/i);
   });
 
   it('deve impedir anexar documento em carga cancelada', () => {
     const carga = criarCarga();
-    carga.changeStatus(StatusCarga.CANCELADA);
+    carga.changeStatus(
+      StatusCarga.CANCELADA,
+      'operador-1',
+      'Cancelamento solicitado.',
+    );
 
     expect(() =>
       carga.anexarDocumento(
@@ -132,8 +158,26 @@ describe('CargaQuimicaAggregate', () => {
   it('deve rejeitar transição inválida de status', () => {
     const carga = criarCarga();
 
-    expect(() => carga.changeStatus(StatusCarga.FINALIZADA)).toThrow(
-      /transição/i,
-    );
+    expect(() =>
+      carga.changeStatus(StatusCarga.FINALIZADA, 'operador-1', 'Finalização.'),
+    ).toThrow(/transição/i);
+  });
+
+  it('deve registrar data de criação e rejeitar transição sem auditoria', () => {
+    const carga = criarCarga();
+
+    expect(carga.dataCriacao).toEqual(new Date('2025-12-31T23:00:00Z'));
+    expect(carga.historicoStatus[0]).toMatchObject({
+      statusAnterior: null,
+      statusNovo: StatusCarga.AGUARDANDO_DOCUMENTACAO,
+      responsavelId: 'responsavel-1',
+      motivo: 'Carga criada.',
+    });
+    expect(carga.historicoStatus[0].data).toEqual(carga.dataCriacao);
+    expect(() =>
+      carga.changeStatus(StatusCarga.CANCELADA, '', 'Cancelamento.'),
+    ).toThrow(/responsável/i);
+    expect(carga.historicoStatus).toHaveLength(1);
+    expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
   });
 });

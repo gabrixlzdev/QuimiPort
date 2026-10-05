@@ -1,6 +1,7 @@
 import { CargaQuimicaAggregate } from '../../../domain/aggregate/carga-quimica/carga-quimica.aggregate.js';
 import { CargaQuimicaRepository } from '../../../domain/repositories/carga-quimica.repository.interface.js';
 import { QuantidadeCarga } from '../../../domain/value-objects/quantidade-carga.vo.js';
+import { generateEntityId } from '../../id-generator.js';
 import {
   RegistrarCargaInputDto,
   CargaQuimicaOutputDto,
@@ -11,7 +12,7 @@ export class RegistrarCargaUseCase {
 
   async execute(input: RegistrarCargaInputDto): Promise<CargaQuimicaOutputDto> {
     const carga = new CargaQuimicaAggregate({
-      id: `CRQ-${crypto.randomUUID()}`,
+      id: generateEntityId('CRQ'),
       codigoIdentificacao: input.codigoIdentificacao,
       produtoQuimicoId: input.produtoQuimicoId,
       quantidade: new QuantidadeCarga(
