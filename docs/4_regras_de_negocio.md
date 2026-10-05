@@ -42,6 +42,8 @@
 | **RN-RTC-02** | Todo responsável técnico deve ser cadastrado com um CPF válido. | Domínio / Value Object | Instanciação e validação do algoritmo do VO `CPF`. |
 | **RN-RTC-03** | Todo responsável técnico deve ser cadastrado com um registro profissional. | Domínio / Value Object | Instanciação do VO `RegistroProfissional` (CRQ/CREA). |
 
+> **Tratamento de dado pessoal (LGPD):** o CPF é coletado com base no cumprimento de obrigação legal/regulatória (identificação do profissional habilitado perante CRQ/CREA, art. 7º, II da LGPD). O valor completo não deve ser exposto em logs, respostas de API ou telas administrativas — o VO `CPF` retorna a forma mascarada (`***.***.XXX-XX`) por padrão em `toString()`/`toJSON()`; o valor integral só deve ser acessado explicitamente (campo `valor`) quando estritamente necessário.
+
 ---
 
 ### [RN-DOC] Regras de Documento de Carga
