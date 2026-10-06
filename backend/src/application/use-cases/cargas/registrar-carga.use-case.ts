@@ -1,5 +1,6 @@
 import { CargaQuimicaAggregate } from '../../../domain/aggregate/carga-quimica/carga-quimica.aggregate.js';
 import { CargaQuimicaRepository } from '../../../domain/repositories/carga-quimica.repository.interface.js';
+import { ResponsavelTecnicoRepository } from '../../../domain/repositories/responsavel-tecnico.repository.interface.js';
 import { QuantidadeCarga } from '../../../domain/value-objects/quantidade-carga.vo.js';
 import { generateEntityId } from '../../id-generator.js';
 import {
@@ -8,9 +9,19 @@ import {
 } from '../../dtos/carga-quimica.dto.js';
 
 export class RegistrarCargaUseCase {
-  constructor(private readonly cargaRepository: CargaQuimicaRepository) {}
+  constructor(
+    private readonly cargaRepository: CargaQuimicaRepository,
+    private readonly responsavelRepository: ResponsavelTecnicoRepository,
+  ) {}
 
   async execute(input: RegistrarCargaInputDto): Promise<CargaQuimicaOutputDto> {
+    const responsavel = await this.responsavelRepository.buscarPorId(
+      input.responsavelTecnicoId,
+    );
+    if (!responsavel) {
+      throw new Error('Responsável técnico não encontrado.');
+    }
+
     const carga = new CargaQuimicaAggregate({
       id: generateEntityId('CRQ'),
       codigoIdentificacao: input.codigoIdentificacao,
