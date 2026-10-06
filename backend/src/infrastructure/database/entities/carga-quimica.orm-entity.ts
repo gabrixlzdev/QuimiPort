@@ -1,8 +1,18 @@
-import { Column, Entity, OneToMany, PrimaryColumn, Relation } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
+  RelationId,
+} from 'typeorm';
+import type { Relation } from 'typeorm';
 import { StatusCarga } from '../../../domain/enums.js';
 import { QuantidadeCargaEmbeddable } from './quantidade-carga.embeddable.js';
 import { DocumentoCargaOrmEntity } from './documento-carga.orm-entity.js';
 import { InspecaoOrmEntity } from './inspecao.orm-entity.js';
+import { ResponsavelTecnicoOrmEntity } from './responsavel-tecnico.orm-entity.js';
 
 @Entity('carga_quimica')
 export class CargaQuimicaOrmEntity {
@@ -18,7 +28,14 @@ export class CargaQuimicaOrmEntity {
   @Column(() => QuantidadeCargaEmbeddable, { prefix: false })
   quantidade: QuantidadeCargaEmbeddable;
 
-  @Column({ name: 'responsavel_tecnico_id', type: 'varchar' })
+  @ManyToOne(() => ResponsavelTecnicoOrmEntity, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'responsavel_tecnico_id' })
+  responsavelTecnico: Relation<ResponsavelTecnicoOrmEntity>;
+
+  @RelationId((carga: CargaQuimicaOrmEntity) => carga.responsavelTecnico)
   responsavelTecnicoId: string;
 
   @Column({ type: 'varchar' })

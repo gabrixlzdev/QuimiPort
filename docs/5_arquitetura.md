@@ -96,10 +96,13 @@ A persistência será organizada em torno do relacionamento semântico principal
 | `inspecao`               | `id`                | `carga_quimica_id -> carga_quimica.id`     | Registra a inspeção operacional e seus resultados (aprovado/reprovado).                                                                  |
 | `area_armazenamento`     | `id`                | —                                          | Referência de pátio, armazém ou área de estocagem vinculada à operação.                                                                  |
 
+`carga_quimica.responsavel_tecnico_id` referencia `responsavel_tecnico.id` e é obrigatório. O cadastro de responsáveis técnicos é feito pela API e o caso de uso de registro de carga verifica a existência do responsável antes de criar o agregado.
+
 ### 5.3.2 Estrutura do relacionamento principal
 
 ```text
 produto_quimico (1) ───< (N) carga_quimica
+responsavel_tecnico (1) ───< (N) carga_quimica
 carga_quimica (1) ───< (N) documento_carga
 carga_quimica (1) ───< (N) historico_status_carga
 carga_quimica (1) ───< (N) inspecao
