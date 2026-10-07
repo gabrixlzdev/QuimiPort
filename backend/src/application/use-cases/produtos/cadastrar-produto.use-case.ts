@@ -13,11 +13,14 @@ export class CadastrarProdutoUseCase {
   async execute(
     input: CadastrarProdutoInputDto,
   ): Promise<ProdutoQuimicoOutputDto> {
-    const produtoExistente = await this.produtoRepository.buscarPorNome(
+    const produtoExistente = await this.produtoRepository.buscarPorNomeEClasseRisco(
       input.nome,
+      input.classeRisco,
     );
     if (produtoExistente) {
-      throw new Error('Produto químico já cadastrado com esse nome.');
+      throw new Error(
+        'Produto químico já cadastrado com esse nome e classe de risco.',
+      );
     }
 
     const produto = new ProdutoQuimico({

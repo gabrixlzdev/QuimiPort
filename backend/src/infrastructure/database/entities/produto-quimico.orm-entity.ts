@@ -1,7 +1,8 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 import { ClassificacaoRiscoEmbeddable } from './classificacao-risco.embeddable.js';
 
 @Entity('produto_quimico')
+@Index(['nome', 'classificacaoRisco.classe'], { unique: true })
 export class ProdutoQuimicoOrmEntity {
   @PrimaryColumn({ type: 'varchar' })
   id: string;
