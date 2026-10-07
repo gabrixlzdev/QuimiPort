@@ -16,7 +16,22 @@ export class InMemoryProdutoQuimicoRepository implements ProdutoQuimicoRepositor
   }
 
   async buscarPorNome(nome: string): Promise<ProdutoQuimico | null> {
-    return [...this.produtos.values()].find((produto) => produto.nome === nome) ?? null;
+    return (
+      [...this.produtos.values()].find((produto) => produto.nome === nome) ?? null
+    );
+  }
+
+  async buscarPorNomeEClasseRisco(
+    nome: string,
+    classeRisco: string,
+  ): Promise<ProdutoQuimico | null> {
+    return (
+      [...this.produtos.values()].find(
+        (produto) =>
+          produto.nome === nome &&
+          produto.classificacaoRisco.classe === classeRisco,
+      ) ?? null
+    );
   }
 
   async listar(): Promise<ProdutoQuimico[]> {
