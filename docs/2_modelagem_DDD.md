@@ -29,16 +29,27 @@ classDiagram
         -string origem
         -string destino
         -Date dataEntrada
+        -Date dataCriacao
         -string grupoCompatibilidade
         -StatusCarga status
         -List~DocumentoCarga~ documentos
         -List~Inspecao~ inspecoes
+        -List~HistoricoStatusCarga~ historicoStatus
         +registrarCarga()
+        +changeStatus(novoStatus, responsavelId, motivo)
         +anexarDocumento(documento)
         +solicitarInspecao()
         +registrarResultadoInspecao(resultado)
         +liberarCarga(justificativa)
         +bloquearCarga(motivo)
+    }
+
+    class HistoricoStatusCarga {
+        -StatusCarga? statusAnterior
+        -StatusCarga statusNovo
+        -Date data
+        -string responsavelId
+        -string motivo
     }
 
     class ProdutoQuimicoEntity {
@@ -108,6 +119,7 @@ classDiagram
 
     CargaQuimicaAggregateRoot "1" *-- "many" DocumentoCargaEntity : contem
     CargaQuimicaAggregateRoot "1" *-- "many" InspecaoEntity : contem
+    CargaQuimicaAggregateRoot "1" *-- "many" HistoricoStatusCarga : audita transicoes
     CargaQuimicaAggregateRoot "1" *-- "1" QuantidadeCargaVO : possui
     CargaQuimicaAggregateRoot ..> ResponsavelTecnicoEntity : referencia por ResponsavelTecnicoId
     CargaQuimicaAggregateRoot ..> ProdutoQuimicoEntity : referencia por ProdutoQuimicoId
@@ -123,7 +135,8 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
 1. CargaQuimica (Aggregate Root)  
    - Responsabilidade: Gerenciar o ciclo de vida da carga no terminal, assegurar invariantes e transições de status apenas quando regras forem atendidas.  
    - Identidade: `CargaId` (UUID v4 imutável).  
-   - Atributos principais: `id`, `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnico`, `origem`, `destino`, `dataEntrada`, `grupoCompatibilidade`, `documentos[]`, `inspecoes[]`, `status`, `historicoStatus[]`, `dataCriacao`.  
+   - Atributos principais: `id`, `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnicoId`, `origem`, `destino`, `dataEntrada`, `grupoCompatibilidade`, `documentos[]`, `inspecoes[]`, `status`, `historicoStatus[]`, `dataCriacao`.
+   - `historicoStatus[]` é uma trilha append-only. A carga inicia com um evento (`statusAnterior: null`, status inicial, data de criação, responsável técnico e motivo `Carga criada.`); cada transição válida acrescenta status anterior/novo, data, responsável e motivo obrigatório. A reidratação valida a continuidade da trilha e sua concordância com o status atual.
    - Regras principais: 
      - Não transita para `LIBERADA` sem documentação completa (`VALIDADO`) e pelo menos uma inspeção com resultado `APROVADO`.
      - Não aceita alterações quando em estados `CANCELADA` ou `FINALIZADA`.
@@ -387,7 +400,14 @@ export class CargaQuimica {
   status: StatusCarga;
   documentos: any[] = [];
   inspecoes: any[] = [];
-  // historicoStatus, dataCriacao, etc.
+  readonly dataCriacao: Date;
+  private readonly eventosStatus: HistoricoStatusCarga[] = [];
+
+  get historicoStatus(): readonly HistoricoStatusCarga[] { ... }
+
+  changeStatus(novoStatus: StatusCarga, responsavelId: string, motivo: string): void {
+    // valida a transição e registra o evento antes de atualizar o status atual
+  }
 
   constructor(produtoQuimico: {
     id: string;

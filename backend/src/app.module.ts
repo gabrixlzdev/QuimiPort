@@ -15,13 +15,14 @@ import { CadastrarResponsavelTecnicoUseCase } from './application/use-cases/resp
 import { ResponsavelTecnicoRepository } from './domain/repositories/responsavel-tecnico.repository.interface.js';
 import { CadastrarAreaArmazenamentoUseCase } from './application/use-cases/areas/cadastrar-area-armazenamento.use-case.js';
 import { InMemoryProdutoQuimicoRepository } from './infrastructure/database/repositories/produto-quimico.repository.js';
-import { InMemoryCargaQuimicaRepository } from './infrastructure/database/repositories/carga-quimica.repository.js';
+import { TypeOrmCargaQuimicaRepository } from './infrastructure/database/repositories/typeorm-carga-quimica.repository.js';
 import { TypeOrmResponsavelTecnicoRepository } from './infrastructure/database/repositories/responsavel-tecnico.repository.js';
 import { InMemoryAreaArmazenamentoRepository } from './infrastructure/database/repositories/area-armazenamento.repository.js';
 import { ProdutoQuimicoOrmEntity } from './infrastructure/database/entities/produto-quimico.orm-entity.js';
 import { CargaQuimicaOrmEntity } from './infrastructure/database/entities/carga-quimica.orm-entity.js';
 import { DocumentoCargaOrmEntity } from './infrastructure/database/entities/documento-carga.orm-entity.js';
 import { InspecaoOrmEntity } from './infrastructure/database/entities/inspecao.orm-entity.js';
+import { HistoricoStatusCargaOrmEntity } from './infrastructure/database/entities/historico-status-carga.orm-entity.js';
 import { ResponsavelTecnicoOrmEntity } from './infrastructure/database/entities/responsavel-tecnico.orm-entity.js';
 import { ProdutosController } from './presentation/controllers/produtos.controller.js';
 import { CargasController } from './presentation/controllers/cargas.controller.js';
@@ -48,6 +49,7 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
           DocumentoCargaOrmEntity,
           InspecaoOrmEntity,
           ResponsavelTecnicoOrmEntity,
+          HistoricoStatusCargaOrmEntity,
         ],
         synchronize: true,
       }),
@@ -63,7 +65,7 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
   providers: [
     AppService,
     InMemoryProdutoQuimicoRepository,
-    InMemoryCargaQuimicaRepository,
+    TypeOrmCargaQuimicaRepository,
     {
       provide: 'ResponsavelTecnicoRepository',
       useClass: TypeOrmResponsavelTecnicoRepository,
@@ -75,7 +77,7 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
     },
     {
       provide: 'CargaQuimicaRepository',
-      useExisting: InMemoryCargaQuimicaRepository,
+      useExisting: TypeOrmCargaQuimicaRepository,
     },
     {
       provide: CadastrarProdutoUseCase,
@@ -92,40 +94,40 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
     {
       provide: RegistrarCargaUseCase,
       useFactory: (
-        cargaRepo: InMemoryCargaQuimicaRepository,
+        cargaRepo: TypeOrmCargaQuimicaRepository,
         responsavelRepo: ResponsavelTecnicoRepository,
       ) => new RegistrarCargaUseCase(cargaRepo, responsavelRepo),
-      inject: [InMemoryCargaQuimicaRepository, 'ResponsavelTecnicoRepository'],
+      inject: [TypeOrmCargaQuimicaRepository, 'ResponsavelTecnicoRepository'],
     },
     {
       provide: ValidarDocumentacaoUseCase,
-      useFactory: (repo: InMemoryCargaQuimicaRepository) =>
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
         new ValidarDocumentacaoUseCase(repo),
-      inject: [InMemoryCargaQuimicaRepository],
+      inject: [TypeOrmCargaQuimicaRepository],
     },
     {
       provide: LiberarCargaUseCase,
-      useFactory: (repo: InMemoryCargaQuimicaRepository) =>
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
         new LiberarCargaUseCase(repo),
-      inject: [InMemoryCargaQuimicaRepository],
+      inject: [TypeOrmCargaQuimicaRepository],
     },
     {
       provide: BloquearCargaUseCase,
-      useFactory: (repo: InMemoryCargaQuimicaRepository) =>
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
         new BloquearCargaUseCase(repo),
-      inject: [InMemoryCargaQuimicaRepository],
+      inject: [TypeOrmCargaQuimicaRepository],
     },
     {
       provide: RealizarInspecaoUseCase,
-      useFactory: (repo: InMemoryCargaQuimicaRepository) =>
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
         new RealizarInspecaoUseCase(repo),
-      inject: [InMemoryCargaQuimicaRepository],
+      inject: [TypeOrmCargaQuimicaRepository],
     },
     {
       provide: AnexarDocumentoUseCase,
-      useFactory: (repo: InMemoryCargaQuimicaRepository) =>
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
         new AnexarDocumentoUseCase(repo),
-      inject: [InMemoryCargaQuimicaRepository],
+      inject: [TypeOrmCargaQuimicaRepository],
     },
     {
       provide: CadastrarResponsavelTecnicoUseCase,

@@ -82,14 +82,14 @@ A persistência será organizada em torno do relacionamento semântico principal
 - `produto_quimico` → origem do cadastro de referência do material
 - `carga_quimica` → registro operacional da carga associada a um produto
 - `documento_carga` → documentos exigidos para conformidade da carga
-- `historico_status` → trilha de auditoria das transições do ciclo de vida da carga
+- `historico_status_carga` → trilha de auditoria das transições do ciclo de vida da carga
 
 ### 5.3.1 Modelo relacional recomendado
 
 | Entidade / Tabela        | Chave Primária (PK) | Chaves Estrangeiras (FK)                   | Descrição                                                                                                                                |
 | :----------------------- | :------------------ | :----------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
 | `produto_quimico`        | `id`                | —                                          | Catálogo do produto químico, com classificação de risco, status ativo/inativo e dados de referência.                                     |
-| `carga_quimica`          | `id`                | `produto_quimico_id -> produto_quimico.id` | Representa a carga física/operacional vinculada a um produto. Armazena o status atual da carga usando a enumeração oficial de 8 estados. |
+| `carga_quimica`          | `id`                | `produto_quimico_id -> produto_quimico.id` | Representa a carga física/operacional vinculada a um produto. Armazena o status atual e a data de criação da carga.                     |
 | `documento_carga`        | `id`                | `carga_quimica_id -> carga_quimica.id`     | Documentos obrigatórios ou complementares da carga (FDS/FISPQ, licenças, laudos e comprovantes).                                         |
 | `historico_status_carga` | `id`                | `carga_quimica_id -> carga_quimica.id`     | Registro de auditoria de todas as transições de status realizadas pela máquina de estados.                                               |
 | `responsavel_tecnico`    | `id`                | —                                          | Dados do responsável técnico que assina ou valida a operação e a conformidade da carga.                                                  |
@@ -137,13 +137,16 @@ Os campos mínimos esperados incluem:
 
 - `id` (PK)
 - `carga_quimica_id` (FK para `carga_quimica.id`)
+- `sequencia` (ordem única e estável do evento dentro da carga)
 - `status_anterior` (valor do status antes da transição)
 - `status_novo` (valor do status após a transição)
 - `data_hora` (timestamp da transição)
 - `responsavel_id` ou `usuario_id` (quem executou a ação)
-- `motivo` (opcional, para detalhar bloqueio, cancelamento, liberação ou inspeção)
+- `motivo` (obrigatório nas transições; descreve a razão operacional da alteração)
 
-A persistência do histórico permite reconstituir, em qualquer momento, a sequência de transições executadas pela máquina de estados do domínio. Por exemplo:
+A criação da carga também registra um evento inicial com `status_anterior` nulo, `status_novo` igual ao estado inicial, `data_hora` igual a `data_criacao`, o responsável técnico e o motivo `Carga criada.`. A persistência do histórico permite reconstituir, em qualquer momento, a sequência de transições executadas pela máquina de estados do domínio. Cada evento deve possuir uma sequência estável por carga para que a reidratação preserve a ordem mesmo quando dois eventos tiverem o mesmo timestamp. Por exemplo:
+
+Cargas existentes antes da ativação dessa tabela precisam de backfill explícito do evento inicial antes de serem lidas pelo repositório com histórico. A aplicação não infere transições passadas nem cria uma trilha fictícia; a reidratação falha explicitamente se a trilha estiver ausente ou inconsistente.
 
 ```text
 AGUARDANDO_DOCUMENTACAO -> DOCUMENTACAO_VALIDADA -> EM_INSPECAO -> LIBERADA -> EM_MOVIMENTACAO -> FINALIZADA
