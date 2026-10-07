@@ -180,4 +180,58 @@ describe('CargaQuimicaAggregate', () => {
     expect(carga.historicoStatus).toHaveLength(1);
     expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
   });
+
+  it('deve restaurar o histórico sem duplicar o evento inicial', () => {
+    const original = criarCarga();
+    original.changeStatus(
+      StatusCarga.CANCELADA,
+      'operador-1',
+      'Cancelamento solicitado.',
+      new Date('2026-01-02T00:00:00Z'),
+    );
+
+    const restaurada = CargaQuimicaAggregate.restaurar(
+      {
+        id: original.id,
+        codigoIdentificacao: original.codigoIdentificacao,
+        produtoQuimicoId: original.produtoQuimicoId,
+        quantidade: original.quantidade,
+        responsavelTecnicoId: original.responsavelTecnicoId,
+        origem: original.origem,
+        destino: original.destino,
+        dataEntrada: original.dataEntrada,
+        dataCriacao: original.dataCriacao,
+        grupoCompatibilidade: original.grupoCompatibilidade,
+        status: original.status,
+      },
+      original.historicoStatus,
+    );
+
+    expect(restaurada.status).toBe(StatusCarga.CANCELADA);
+    expect(restaurada.historicoStatus).toEqual(original.historicoStatus);
+    expect(restaurada.historicoStatus).toHaveLength(2);
+  });
+
+  it('deve rejeitar reidratação quando o status diverge do histórico', () => {
+    const original = criarCarga();
+
+    expect(() =>
+      CargaQuimicaAggregate.restaurar(
+        {
+          id: original.id,
+          codigoIdentificacao: original.codigoIdentificacao,
+          produtoQuimicoId: original.produtoQuimicoId,
+          quantidade: original.quantidade,
+          responsavelTecnicoId: original.responsavelTecnicoId,
+          origem: original.origem,
+          destino: original.destino,
+          dataEntrada: original.dataEntrada,
+          dataCriacao: original.dataCriacao,
+          grupoCompatibilidade: original.grupoCompatibilidade,
+          status: StatusCarga.CANCELADA,
+        },
+        original.historicoStatus,
+      ),
+    ).toThrow(/diverge do histórico/i);
+  });
 });

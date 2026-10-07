@@ -12,6 +12,7 @@ import { StatusCarga } from '../../../domain/enums.js';
 import { QuantidadeCargaEmbeddable } from './quantidade-carga.embeddable.js';
 import { DocumentoCargaOrmEntity } from './documento-carga.orm-entity.js';
 import { InspecaoOrmEntity } from './inspecao.orm-entity.js';
+import { HistoricoStatusCargaOrmEntity } from './historico-status-carga.orm-entity.js';
 import { ResponsavelTecnicoOrmEntity } from './responsavel-tecnico.orm-entity.js';
 
 @Entity('carga_quimica')
@@ -47,6 +48,13 @@ export class CargaQuimicaOrmEntity {
   @Column({ name: 'data_entrada', type: 'timestamp' })
   dataEntrada: Date;
 
+  @Column({
+    name: 'data_criacao',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  dataCriacao: Date;
+
   @Column({ name: 'grupo_compatibilidade', type: 'varchar' })
   grupoCompatibilidade: string;
 
@@ -62,4 +70,9 @@ export class CargaQuimicaOrmEntity {
     cascade: true,
   })
   inspecoes: Relation<InspecaoOrmEntity>[];
+
+  @OneToMany(() => HistoricoStatusCargaOrmEntity, (evento) => evento.carga, {
+    cascade: true,
+  })
+  historicoStatus: Relation<HistoricoStatusCargaOrmEntity>[];
 }
