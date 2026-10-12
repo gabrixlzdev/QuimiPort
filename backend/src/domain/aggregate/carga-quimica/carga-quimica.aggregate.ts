@@ -5,11 +5,12 @@ import {
 } from '../../enums.js';
 import { Inspecao } from '../../entities/inspecao.entity.js';
 import { QuantidadeCarga } from '../../value-objects/quantidade-carga.vo.js';
+import { CodigoIdentificacao } from '../../value-objects/codigo-identificacao.vo.js';
 import { DocumentoCarga } from './documento-carga.entity.js';
 
 export type CargaQuimicaAggregateProps = {
   id: string;
-  codigoIdentificacao: string;
+  codigoIdentificacao: CodigoIdentificacao;
   produtoQuimicoId: string;
   quantidade: QuantidadeCarga;
   responsavelTecnicoId: string;
@@ -31,7 +32,7 @@ export type HistoricoStatusCarga = {
 
 export class CargaQuimicaAggregate {
   public readonly id: string;
-  public readonly codigoIdentificacao: string;
+  public readonly codigoIdentificacao: CodigoIdentificacao;
   public readonly produtoQuimicoId: string;
   public readonly quantidade: QuantidadeCarga;
   public readonly responsavelTecnicoId: string;
