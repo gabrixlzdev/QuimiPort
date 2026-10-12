@@ -17,13 +17,14 @@ import { CadastrarAreaArmazenamentoUseCase } from './application/use-cases/areas
 import { InMemoryProdutoQuimicoRepository } from './infrastructure/database/repositories/produto-quimico.repository.js';
 import { TypeOrmCargaQuimicaRepository } from './infrastructure/database/repositories/typeorm-carga-quimica.repository.js';
 import { TypeOrmResponsavelTecnicoRepository } from './infrastructure/database/repositories/responsavel-tecnico.repository.js';
-import { InMemoryAreaArmazenamentoRepository } from './infrastructure/database/repositories/area-armazenamento.repository.js';
+import { TypeOrmAreaArmazenamentoRepository } from './infrastructure/database/repositories/typeorm-area-armazenamento.repository.js';
 import { ProdutoQuimicoOrmEntity } from './infrastructure/database/entities/produto-quimico.orm-entity.js';
 import { CargaQuimicaOrmEntity } from './infrastructure/database/entities/carga-quimica.orm-entity.js';
 import { DocumentoCargaOrmEntity } from './infrastructure/database/entities/documento-carga.orm-entity.js';
 import { InspecaoOrmEntity } from './infrastructure/database/entities/inspecao.orm-entity.js';
 import { HistoricoStatusCargaOrmEntity } from './infrastructure/database/entities/historico-status-carga.orm-entity.js';
 import { ResponsavelTecnicoOrmEntity } from './infrastructure/database/entities/responsavel-tecnico.orm-entity.js';
+import { AreaArmazenamentoOrmEntity } from './infrastructure/database/entities/area-armazenamento.orm-entity.js';
 import { ProdutosController } from './presentation/controllers/produtos.controller.js';
 import { CargasController } from './presentation/controllers/cargas.controller.js';
 import { ResponsaveisTecnicosController } from './presentation/controllers/responsaveis-tecnicos.controller.js';
@@ -50,11 +51,15 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
           InspecaoOrmEntity,
           ResponsavelTecnicoOrmEntity,
           HistoricoStatusCargaOrmEntity,
+          AreaArmazenamentoOrmEntity,
         ],
         synchronize: true,
       }),
     }),
-    TypeOrmModule.forFeature([ResponsavelTecnicoOrmEntity]),
+    TypeOrmModule.forFeature([
+      ResponsavelTecnicoOrmEntity,
+      AreaArmazenamentoOrmEntity,
+    ]),
   ],
   controllers: [
     AppController,
@@ -70,7 +75,7 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
       provide: 'ResponsavelTecnicoRepository',
       useClass: TypeOrmResponsavelTecnicoRepository,
     },
-    InMemoryAreaArmazenamentoRepository,
+    TypeOrmAreaArmazenamentoRepository,
     {
       provide: 'ProdutoQuimicoRepository',
       useExisting: InMemoryProdutoQuimicoRepository,
@@ -137,9 +142,14 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
     },
     {
       provide: CadastrarAreaArmazenamentoUseCase,
-      useFactory: (repo: InMemoryAreaArmazenamentoRepository) =>
-        new CadastrarAreaArmazenamentoUseCase(repo),
-      inject: [InMemoryAreaArmazenamentoRepository],
+      useFactory: (
+        areaRepo: TypeOrmAreaArmazenamentoRepository,
+        cargaRepo: TypeOrmCargaQuimicaRepository,
+      ) => new CadastrarAreaArmazenamentoUseCase(areaRepo, cargaRepo),
+      inject: [
+        TypeOrmAreaArmazenamentoRepository,
+        TypeOrmCargaQuimicaRepository,
+      ],
     },
   ],
 })

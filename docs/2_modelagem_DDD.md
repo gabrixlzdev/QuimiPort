@@ -136,7 +136,7 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
 
 1. CargaQuimica (Aggregate Root)
    - Responsabilidade: Gerenciar o ciclo de vida da carga no terminal, assegurar invariantes e transições de status apenas quando regras forem atendidas.
-   - Identidade: `CargaId` (UUID v4 imutável).
+   - Identidade: `CargaId` (prefixo - UUID v4 imutável).
    - Atributos principais: `id`, `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnicoId`, `origem`, `destino`, `dataEntrada`, `grupoCompatibilidade`, `documentos[]`, `inspecoes[]`, `status`, `historicoStatus[]`, `dataCriacao`.
    - O campo `codigoIdentificacao` é informado no registro, segue um formato legível (8–20 caracteres alfanuméricos) e pode ser usado por pessoas ou sistemas externos para localizar a carga. No banco, também tem restrição de unicidade. Diferencia-se do `id` devido à possibilidade de uso por sistemas externos.
    - `historicoStatus[]` é uma trilha append-only. A carga inicia com um evento (`statusAnterior: null`, status inicial, data de criação, responsável técnico e motivo `Carga criada.`); cada transição válida acrescenta status anterior/novo, data, responsável e motivo obrigatório. A reidratação valida a continuidade da trilha e sua concordância com o status atual.
@@ -148,33 +148,33 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
 
 2. ProdutoQuimico
    - Responsabilidade: Catálogo de substâncias com classificação de risco.
-   - Identidade: `ProdutoQuimicoId` (UUID v4).
+   - Identidade: `ProdutoQuimicoId` (prefixo - UUID v4).
    - Atributos: `id`, `nome`, `descricao`, `grupoCompatibilidade`, `classificacaoRisco`, `ativo`, `dataCadastro`, `dataAtualizacao`.
    - Regras: Não pode ser cadastrado sem nome, descrição e classificação de risco; quando `ativo === false` impede registro de novas cargas associadas. O campo `grupoCompatibilidade` identifica a família compatível do produto, e `dataAtualizacao` registra a última alteração cadastral.
    - Nota: mantido como agregado separado (referência por id).
 
 3. DocumentoCarga
    - Responsabilidade: Representar documento legal (FDS, Laudo, Declaração IMDG) e controlar validade/validação.
-   - Identidade: `DocumentoId` (UUID v4, escopo de Carga).
+   - Identidade: `DocumentoId` (prefixo - UUID v4, escopo de Carga).
    - Atributos: `id`, `tipoDocumento`, `numeroReferencia`, `urlArquivo`, `dataEmissao`, `dataValidade`, `statusValidacao` (`PENDENTE|VALIDADO|REJEITADO`).
    - Regras: Se `dataValidade < hoje` → `estaVencido() === true` e impede liberação.
 
 4. Inspecao
    - Responsabilidade: Parecer de vistoria física.
-   - Identidade: `InspecaoId` (UUID v4, escopo de Carga).
+   - Identidade: `InspecaoId` (prefixo - UUID v4, escopo de Carga).
    - Atributos: `id`, `dataSolicitacao`, `dataRealizacao`, `inspetorId`, `resultado` (`PENDENTE|APROVADO|REPROVADO`), `observacoes`.
    - Regras: `REPROVADO` exige justificativa e deve disparar bloqueio da carga.
 
 5. ResponsavelTecnico
    - Responsabilidade: Representar o profissional legalmente habilitado que responde tecnicamente pela carga química perante os órgãos reguladores.
-   - Identidade: `ResponsavelTecnicoId` (UUID v4).
+   - Identidade: `ResponsavelTecnicoId` (prefixo - UUID v4).
    - Atributos: `id`, `nome`, `cpf`, `registroProfissional` (CRQ/CREA + UF), `emailContato` (opcional).
    - Regras: RN-RTC-02 — não pode ser cadastrado sem `cpf` válido (dígitos verificadores conferidos pelo VO `CPF`); RN-RTC-03 — não pode ser cadastrado sem `registroProfissional` válido (VO `RegistroProfissional`).
    - Relacionamentos: Referenciado por `CargaQuimica` através de `responsavelTecnicoId`; não faz parte do agregado (ver 2.8).
 
 6. AreaArmazenamento
    - Responsabilidade: Representar o espaço físico do pátio/armazém onde uma carga química fica alocada, controlando ocupação e capacidade.
-   - Identidade: `AreaArmazenamentoId` (UUID v4).
+   - Identidade: `AreaArmazenamentoId` (prefixo - UUID v4).
    - Atributos: `id`, `nome`, `codigo`, `tipo` (`PATIO|ARMAZEM|AREA_SEGURA`), `cargaQuimicaId`, `capacidadeMaxima`, `quantidadeOcupada`, `status` (`COM_ESPACO|LOTADA`).
    - Regras: RN-ARM-02 — status inicial sempre `COM_ESPACO`; RN-ARM-03 — não pode existir sem `cargaQuimicaId` associado; RN-ARM-04 — `quantidadeOcupada` deve ser maior que zero; RN-ARM-05 — `quantidadeOcupada` nunca pode exceder `capacidadeMaxima`.
    - Relacionamentos: Referencia `CargaQuimica` por `cargaQuimicaId`; não faz parte do agregado `CargaQuimica` pelo mesmo motivo de `ProdutoQuimico` (ver 2.8).

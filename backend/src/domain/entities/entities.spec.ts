@@ -18,7 +18,10 @@ describe('ResponsavelTecnico', () => {
   });
 
   it('deve rejeitar responsável técnico sem cpf', () => {
-    expect(() => new ResponsavelTecnico({ ...props, cpf: undefined as unknown as Cpf })).toThrow();
+    expect(
+      () =>
+        new ResponsavelTecnico({ ...props, cpf: undefined as unknown as Cpf }),
+    ).toThrow();
   });
 });
 
@@ -33,20 +36,44 @@ describe('AreaArmazenamento', () => {
     quantidadeOcupada: 500,
   };
 
-  it('deve criar área com status inicial COM_ESPACO', () => {
+  it('deve criar área com status COM_ESPACO quando ainda há capacidade', () => {
     const area = new AreaArmazenamento(props);
     expect(area.status).toBe(StatusAreaArmazenamento.COM_ESPACO);
   });
 
+  it('deve marcar área como LOTADA quando ocupação alcançar a capacidade', () => {
+    const area = new AreaArmazenamento({
+      ...props,
+      quantidadeOcupada: props.capacidadeMaxima,
+    });
+    expect(area.status).toBe(StatusAreaArmazenamento.LOTADA);
+  });
+
   it('deve rejeitar área sem carga química associada', () => {
-    expect(() => new AreaArmazenamento({ ...props, cargaQuimicaId: '' })).toThrow();
+    expect(
+      () => new AreaArmazenamento({ ...props, cargaQuimicaId: '' }),
+    ).toThrow();
   });
 
   it('deve rejeitar quantidade ocupada menor ou igual a zero', () => {
-    expect(() => new AreaArmazenamento({ ...props, quantidadeOcupada: 0 })).toThrow();
+    expect(
+      () => new AreaArmazenamento({ ...props, quantidadeOcupada: 0 }),
+    ).toThrow();
   });
 
   it('deve rejeitar quantidade ocupada maior que a capacidade máxima', () => {
-    expect(() => new AreaArmazenamento({ ...props, quantidadeOcupada: 1500 })).toThrow();
+    expect(
+      () => new AreaArmazenamento({ ...props, quantidadeOcupada: 1500 }),
+    ).toThrow();
+  });
+
+  it('deve rejeitar capacidade máxima não finita', () => {
+    expect(
+      () =>
+        new AreaArmazenamento({
+          ...props,
+          capacidadeMaxima: Number.POSITIVE_INFINITY,
+        }),
+    ).toThrow();
   });
 });
