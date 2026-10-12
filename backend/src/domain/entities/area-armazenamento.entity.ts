@@ -25,20 +25,30 @@ export class AreaArmazenamento {
       throw new Error('Área de armazenamento inválida.');
     }
 
-    if (!props.cargaQuimicaId) {
-      throw new Error('Área de armazenamento deve estar associada a uma carga química.');
+    if (!props.cargaQuimicaId?.trim()) {
+      throw new Error(
+        'Área de armazenamento deve estar associada a uma carga química.',
+      );
     }
 
-    if (!props.capacidadeMaxima || props.capacidadeMaxima <= 0) {
+    if (
+      !Number.isFinite(props.capacidadeMaxima) ||
+      props.capacidadeMaxima <= 0
+    ) {
       throw new Error('Capacidade máxima deve ser maior que zero.');
     }
 
-    if (!props.quantidadeOcupada || props.quantidadeOcupada <= 0) {
+    if (
+      !Number.isFinite(props.quantidadeOcupada) ||
+      props.quantidadeOcupada <= 0
+    ) {
       throw new Error('Quantidade ocupada deve ser maior que zero.');
     }
 
     if (props.quantidadeOcupada > props.capacidadeMaxima) {
-      throw new Error('Quantidade ocupada não pode exceder a capacidade máxima da área.');
+      throw new Error(
+        'Quantidade ocupada não pode exceder a capacidade máxima da área.',
+      );
     }
 
     this.id = props.id;
@@ -48,6 +58,9 @@ export class AreaArmazenamento {
     this.cargaQuimicaId = props.cargaQuimicaId;
     this.capacidadeMaxima = props.capacidadeMaxima;
     this.quantidadeOcupada = props.quantidadeOcupada;
-    this.status = StatusAreaArmazenamento.COM_ESPACO;
+    this.status =
+      this.quantidadeOcupada === this.capacidadeMaxima
+        ? StatusAreaArmazenamento.LOTADA
+        : StatusAreaArmazenamento.COM_ESPACO;
   }
 }
