@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DataSource, EntityManager } from 'typeorm';
 import { CargaQuimicaAggregate } from '../../../domain/aggregate/carga-quimica/carga-quimica.aggregate.js';
 import { QuantidadeCarga } from '../../../domain/value-objects/quantidade-carga.vo.js';
+import { CodigoIdentificacao } from '../../../domain/value-objects/codigo-identificacao.vo.js';
 import { StatusCarga, UnidadeMedida } from '../../../domain/enums.js';
 import { CargaQuimicaOrmEntity } from '../entities/carga-quimica.orm-entity.js';
 import { TypeOrmCargaQuimicaRepository } from './typeorm-carga-quimica.repository.js';
@@ -29,7 +30,7 @@ describe('TypeOrmCargaQuimicaRepository', () => {
 
     const carga = new CargaQuimicaAggregate({
       id: 'carga-1',
-      codigoIdentificacao: 'ABC12345',
+      codigoIdentificacao: new CodigoIdentificacao('ABC12345'),
       produtoQuimicoId: 'produto-1',
       quantidade: new QuantidadeCarga(100, UnidadeMedida.QUILOGRAMAS),
       responsavelTecnicoId: 'responsavel-1',
@@ -52,6 +53,7 @@ describe('TypeOrmCargaQuimicaRepository', () => {
     expect(dataSource.transaction).toHaveBeenCalledOnce();
     expect(manager.save).toHaveBeenCalledOnce();
     expect(entityPersistida?.dataCriacao).toEqual(carga.dataCriacao);
+    expect(entityPersistida?.codigoIdentificacao).toBe('ABC12345');
     expect(entityPersistida?.historicoStatus).toHaveLength(2);
     expect(entityPersistida?.historicoStatus[1]).toMatchObject({
       id: 'carga-1-status-1',
@@ -65,6 +67,9 @@ describe('TypeOrmCargaQuimicaRepository', () => {
     const recuperada = await cargaRepository.buscarPorId(carga.id);
 
     expect(recuperada?.status).toBe(StatusCarga.CANCELADA);
+    expect(recuperada?.codigoIdentificacao).toEqual(
+      new CodigoIdentificacao('ABC12345'),
+    );
     expect(recuperada?.dataCriacao).toEqual(carga.dataCriacao);
     expect(recuperada?.historicoStatus).toEqual(carga.historicoStatus);
   });
