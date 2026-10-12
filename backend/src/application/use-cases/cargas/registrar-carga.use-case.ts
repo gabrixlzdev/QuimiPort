@@ -2,6 +2,7 @@ import { CargaQuimicaAggregate } from '../../../domain/aggregate/carga-quimica/c
 import { CargaQuimicaRepository } from '../../../domain/repositories/carga-quimica.repository.interface.js';
 import { ResponsavelTecnicoRepository } from '../../../domain/repositories/responsavel-tecnico.repository.interface.js';
 import { QuantidadeCarga } from '../../../domain/value-objects/quantidade-carga.vo.js';
+import { CodigoIdentificacao } from '../../../domain/value-objects/codigo-identificacao.vo.js';
 import { generateEntityId } from '../../id-generator.js';
 import {
   RegistrarCargaInputDto,
@@ -24,7 +25,7 @@ export class RegistrarCargaUseCase {
 
     const carga = new CargaQuimicaAggregate({
       id: generateEntityId('CRQ'),
-      codigoIdentificacao: input.codigoIdentificacao,
+      codigoIdentificacao: new CodigoIdentificacao(input.codigoIdentificacao),
       produtoQuimicoId: input.produtoQuimicoId,
       quantidade: new QuantidadeCarga(
         input.quantidadeValor,
@@ -41,7 +42,7 @@ export class RegistrarCargaUseCase {
 
     return {
       id: salva.id,
-      codigoIdentificacao: salva.codigoIdentificacao,
+      codigoIdentificacao: salva.codigoIdentificacao.codigo,
       produtoQuimicoId: salva.produtoQuimicoId,
       quantidadeValor: salva.quantidade.valor,
       quantidadeUnidade: salva.quantidade.unidade,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CargaQuimicaAggregate } from '../../../domain/aggregate/carga-quimica/carga-quimica.aggregate.js';
 import { InMemoryCargaQuimicaRepository } from '../../../infrastructure/database/repositories/carga-quimica.repository.js';
 import { QuantidadeCarga } from '../../../domain/value-objects/quantidade-carga.vo.js';
+import { CodigoIdentificacao } from '../../../domain/value-objects/codigo-identificacao.vo.js';
 import { UnidadeMedida } from '../../../domain/enums.js';
 import { AnexarDocumentoUseCase } from './anexar-documento.use-case.js';
 
@@ -10,7 +11,7 @@ describe('AnexarDocumentoUseCase', () => {
     const repository = new InMemoryCargaQuimicaRepository();
     const carga = new CargaQuimicaAggregate({
       id: 'carga-1',
-      codigoIdentificacao: 'ABC12345',
+      codigoIdentificacao: new CodigoIdentificacao('ABC12345'),
       produtoQuimicoId: 'produto-1',
       quantidade: new QuantidadeCarga(100, UnidadeMedida.QUILOGRAMAS),
       responsavelTecnicoId: 'responsavel-1',

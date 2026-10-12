@@ -46,7 +46,27 @@ describe('RegistrarCargaUseCase', () => {
 
     const output = await useCase.execute(input);
 
+    expect(output.codigoIdentificacao).toBe(input.codigoIdentificacao);
     expect(output.responsavelTecnicoId).toBe(input.responsavelTecnicoId);
     expect(await cargas.listar()).toHaveLength(1);
+  });
+
+  it('não registra carga quando o código de identificação é inválido', async () => {
+    const cargas = new InMemoryCargaQuimicaRepository();
+    const responsaveis = new InMemoryResponsavelTecnicoRepository();
+    await responsaveis.salvar(
+      new ResponsavelTecnico({
+        id: input.responsavelTecnicoId,
+        nome: 'Maria Silva',
+        cpf: new Cpf('529.982.247-25'),
+        registroProfissional: new RegistroProfissional('CRQ 12345', 'SP'),
+      }),
+    );
+    const useCase = new RegistrarCargaUseCase(cargas, responsaveis);
+
+    await expect(
+      useCase.execute({ ...input, codigoIdentificacao: 'abc 123' }),
+    ).rejects.toThrow('CodigoIdentificacao inválido');
+    expect(await cargas.listar()).toEqual([]);
   });
 });

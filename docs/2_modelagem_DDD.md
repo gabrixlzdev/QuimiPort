@@ -138,6 +138,7 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
    - Responsabilidade: Gerenciar o ciclo de vida da carga no terminal, assegurar invariantes e transições de status apenas quando regras forem atendidas.
    - Identidade: `CargaId` (prefixo - UUID v4 imutável).
    - Atributos principais: `id`, `codigoIdentificacao`, `produtoQuimicoId`, `quantidade`, `responsavelTecnicoId`, `origem`, `destino`, `dataEntrada`, `grupoCompatibilidade`, `documentos[]`, `inspecoes[]`, `status`, `historicoStatus[]`, `dataCriacao`.
+   - O campo `codigoIdentificacao` é informado no registro, segue um formato legível (8–20 caracteres alfanuméricos) e pode ser usado por pessoas ou sistemas externos para localizar a carga. No banco, também tem restrição de unicidade. Diferencia-se do `id` devido à possibilidade de uso por sistemas externos.
    - `historicoStatus[]` é uma trilha append-only. A carga inicia com um evento (`statusAnterior: null`, status inicial, data de criação, responsável técnico e motivo `Carga criada.`); cada transição válida acrescenta status anterior/novo, data, responsável e motivo obrigatório. A reidratação valida a continuidade da trilha e sua concordância com o status atual.
    - Regras principais:
      - Não transita para `LIBERADA` sem documentação completa (`VALIDADO`) e pelo menos uma inspeção com resultado `APROVADO`.
@@ -206,6 +207,7 @@ Observação: nesta modelagem `ProdutoQuimico` permanece fora do agregado `Carga
 5. CodigoIdentificacao
    - Atributo: `codigo` (string).
    - Invariante: alfanumérico 8–20 chars, sem espaços/acentos: `^[A-Za-z0-9]{8,20}$`.
+   - O campo `codigoIdentificacao` é informado no registro, segue um formato legível (8–20 caracteres alfanuméricos) e pode ser usado por pessoas ou sistemas externos para localizar a carga. No banco, também tem restrição de unicidade. Diferencia-se do `id` devido à possibilidade de uso por sistemas externos.
 
 Observação geral: implemente validação no construtor do VO para garantir invariantes imutáveis.
 

@@ -9,12 +9,13 @@ import {
 import { DocumentoCarga } from './documento-carga.entity.js';
 import { Inspecao } from '../../entities/inspecao.entity.js';
 import { QuantidadeCarga } from '../../value-objects/quantidade-carga.vo.js';
+import { CodigoIdentificacao } from '../../value-objects/codigo-identificacao.vo.js';
 
 describe('CargaQuimicaAggregate', () => {
   const criarCarga = () =>
     new CargaQuimicaAggregate({
       id: 'carga-1',
-      codigoIdentificacao: 'ABC12345',
+      codigoIdentificacao: new CodigoIdentificacao('ABC12345'),
       produtoQuimicoId: 'produto-1',
       quantidade: new QuantidadeCarga(1200, UnidadeMedida.QUILOGRAMAS),
       responsavelTecnicoId: 'responsavel-1',

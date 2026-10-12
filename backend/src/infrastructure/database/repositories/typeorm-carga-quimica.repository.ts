@@ -6,6 +6,7 @@ import { DocumentoCarga } from '../../../domain/aggregate/carga-quimica/document
 import { Inspecao } from '../../../domain/entities/inspecao.entity.js';
 import { CargaQuimicaRepository } from '../../../domain/repositories/carga-quimica.repository.interface.js';
 import { QuantidadeCarga } from '../../../domain/value-objects/quantidade-carga.vo.js';
+import { CodigoIdentificacao } from '../../../domain/value-objects/codigo-identificacao.vo.js';
 import { CargaQuimicaOrmEntity } from '../entities/carga-quimica.orm-entity.js';
 import { DocumentoCargaOrmEntity } from '../entities/documento-carga.orm-entity.js';
 import { HistoricoStatusCargaOrmEntity } from '../entities/historico-status-carga.orm-entity.js';
@@ -61,7 +62,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
   private toOrmEntity(carga: CargaQuimicaAggregate): CargaQuimicaOrmEntity {
     const entity = new CargaQuimicaOrmEntity();
     entity.id = carga.id;
-    entity.codigoIdentificacao = carga.codigoIdentificacao;
+    entity.codigoIdentificacao = carga.codigoIdentificacao.codigo;
     entity.produtoQuimicoId = carga.produtoQuimicoId;
     entity.quantidade = Object.assign(new QuantidadeCargaEmbeddable(), {
       valor: carga.quantidade.valor,
@@ -120,7 +121,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
     const carga = CargaQuimicaAggregate.restaurar(
       {
         id: entity.id,
-        codigoIdentificacao: entity.codigoIdentificacao,
+        codigoIdentificacao: new CodigoIdentificacao(entity.codigoIdentificacao),
         produtoQuimicoId: entity.produtoQuimicoId,
         quantidade: new QuantidadeCarga(
           entity.quantidade.valor,
