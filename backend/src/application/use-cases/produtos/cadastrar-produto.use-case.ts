@@ -8,6 +8,7 @@ import { ClassificacaoRisco } from '../../../domain/value-objects/classificacao-
 import { ProdutoQuimicoRepository } from '../../../domain/repositories/produto-quimico.repository.interface.js';
 import { Either, left, right } from '../../../shared/either.js';
 import { generateEntityId } from '../../id-generator.js';
+import { ProdutoQuimicoMapper } from '../../mappers/produto-quimico.mapper.js';
 import {
   CadastrarProdutoInputDto,
   ProdutoQuimicoOutputDto,
@@ -24,14 +25,6 @@ export class CadastrarProdutoUseCase {
   async execute(
     input: CadastrarProdutoInputDto,
   ): Promise<Either<CadastrarProdutoError, ProdutoQuimicoOutputDto>> {
-    const produtoExistente = await this.produtoRepository.buscarPorNomeEClasseRisco(
-      input.nome,
-      input.classeRisco,
-    );
-    if (produtoExistente) {
-      return left(new ProdutoQuimicoDuplicadoError());
-    }
-
     const classificacaoRisco = ClassificacaoRisco.create(
       input.classeRisco,
       input.subclasse,
@@ -50,18 +43,16 @@ export class CadastrarProdutoUseCase {
     });
     if (produto.kind === 'left') return produto;
 
-    const salvo = await this.produtoRepository.salvar(produto.value);
+    const produtoExistente =
+      await this.produtoRepository.buscarPorNomeEClasseRisco(
+        produto.value.nome,
+        produto.value.classificacaoRisco.classe,
+      );
+    if (produtoExistente) {
+      return left(new ProdutoQuimicoDuplicadoError());
+    }
 
-    return right({
-      id: salvo.id,
-      nome: salvo.nome,
-      descricao: salvo.descricao,
-      grupoCompatibilidade: salvo.grupoCompatibilidade,
-      classeRisco: salvo.classificacaoRisco.classe,
-      subclasse: salvo.classificacaoRisco.subclasse,
-      numeroONU: salvo.classificacaoRisco.numeroONU,
-      grupoEmbalagem: salvo.classificacaoRisco.grupoEmbalagem,
-      ativo: salvo.ativo,
-    });
+    const salvo = await this.produtoRepository.salvar(produto.value);
+    return right(ProdutoQuimicoMapper.toOutput(salvo));
   }
 }

@@ -5,6 +5,9 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { CadastrarProdutoUseCase } from './application/use-cases/produtos/cadastrar-produto.use-case.js';
 import { InativarProdutoUseCase } from './application/use-cases/produtos/inativar-produto.use-case.js';
+import { ListarProdutosUseCase } from './application/use-cases/produtos/listar-produtos.use-case.js';
+import { BuscarProdutoUseCase } from './application/use-cases/produtos/buscar-produto.use-case.js';
+import { AtualizarProdutoUseCase } from './application/use-cases/produtos/atualizar-produto.use-case.js';
 import { RegistrarCargaUseCase } from './application/use-cases/cargas/registrar-carga.use-case.js';
 import { ValidarDocumentacaoUseCase } from './application/use-cases/cargas/validar-documentacao.use-case.js';
 import { LiberarCargaUseCase } from './application/use-cases/cargas/liberar-carga.use-case.js';
@@ -14,7 +17,7 @@ import { AnexarDocumentoUseCase } from './application/use-cases/cargas/anexar-do
 import { CadastrarResponsavelTecnicoUseCase } from './application/use-cases/responsaveis/cadastrar-responsavel-tecnico.use-case.js';
 import { ResponsavelTecnicoRepository } from './domain/repositories/responsavel-tecnico.repository.interface.js';
 import { CadastrarAreaArmazenamentoUseCase } from './application/use-cases/areas/cadastrar-area-armazenamento.use-case.js';
-import { InMemoryProdutoQuimicoRepository } from './infrastructure/database/repositories/produto-quimico.repository.js';
+import { TypeOrmProdutoQuimicoRepository } from './infrastructure/database/repositories/typeorm-produto-quimico.repository.js';
 import { TypeOrmCargaQuimicaRepository } from './infrastructure/database/repositories/typeorm-carga-quimica.repository.js';
 import { TypeOrmResponsavelTecnicoRepository } from './infrastructure/database/repositories/responsavel-tecnico.repository.js';
 import { TypeOrmAreaArmazenamentoRepository } from './infrastructure/database/repositories/typeorm-area-armazenamento.repository.js';
@@ -57,6 +60,7 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
       }),
     }),
     TypeOrmModule.forFeature([
+      ProdutoQuimicoOrmEntity,
       ResponsavelTecnicoOrmEntity,
       AreaArmazenamentoOrmEntity,
     ]),
@@ -69,7 +73,7 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
   ],
   providers: [
     AppService,
-    InMemoryProdutoQuimicoRepository,
+    TypeOrmProdutoQuimicoRepository,
     TypeOrmCargaQuimicaRepository,
     {
       provide: 'ResponsavelTecnicoRepository',
@@ -78,7 +82,7 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
     TypeOrmAreaArmazenamentoRepository,
     {
       provide: 'ProdutoQuimicoRepository',
-      useExisting: InMemoryProdutoQuimicoRepository,
+      useExisting: TypeOrmProdutoQuimicoRepository,
     },
     {
       provide: 'CargaQuimicaRepository',
@@ -86,15 +90,33 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
     },
     {
       provide: CadastrarProdutoUseCase,
-      useFactory: (repo: InMemoryProdutoQuimicoRepository) =>
+      useFactory: (repo: TypeOrmProdutoQuimicoRepository) =>
         new CadastrarProdutoUseCase(repo),
-      inject: [InMemoryProdutoQuimicoRepository],
+      inject: [TypeOrmProdutoQuimicoRepository],
+    },
+    {
+      provide: ListarProdutosUseCase,
+      useFactory: (repo: TypeOrmProdutoQuimicoRepository) =>
+        new ListarProdutosUseCase(repo),
+      inject: [TypeOrmProdutoQuimicoRepository],
+    },
+    {
+      provide: BuscarProdutoUseCase,
+      useFactory: (repo: TypeOrmProdutoQuimicoRepository) =>
+        new BuscarProdutoUseCase(repo),
+      inject: [TypeOrmProdutoQuimicoRepository],
+    },
+    {
+      provide: AtualizarProdutoUseCase,
+      useFactory: (repo: TypeOrmProdutoQuimicoRepository) =>
+        new AtualizarProdutoUseCase(repo),
+      inject: [TypeOrmProdutoQuimicoRepository],
     },
     {
       provide: InativarProdutoUseCase,
-      useFactory: (repo: InMemoryProdutoQuimicoRepository) =>
+      useFactory: (repo: TypeOrmProdutoQuimicoRepository) =>
         new InativarProdutoUseCase(repo),
-      inject: [InMemoryProdutoQuimicoRepository],
+      inject: [TypeOrmProdutoQuimicoRepository],
     },
     {
       provide: RegistrarCargaUseCase,

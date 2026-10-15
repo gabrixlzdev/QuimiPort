@@ -7,7 +7,7 @@ export class ProdutoQuimicoOrmEntity {
   @PrimaryColumn({ type: 'varchar' })
   id: string;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar' })
   nome: string;
 
   @Column({ type: 'text' })

@@ -9,6 +9,8 @@ export type CadastrarProdutoInputDto = {
   ativo?: boolean;
 };
 
+export type AtualizarProdutoInputDto = Omit<CadastrarProdutoInputDto, 'ativo'>;
+
 export type ProdutoQuimicoOutputDto = {
   id: string;
   nome: string;
@@ -19,4 +21,6 @@ export type ProdutoQuimicoOutputDto = {
   numeroONU: string;
   grupoEmbalagem: string;
   ativo: boolean;
+  dataCadastro: Date;
+  dataAtualizacao: Date;
 };
