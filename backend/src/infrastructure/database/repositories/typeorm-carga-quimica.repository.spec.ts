@@ -6,6 +6,7 @@ import { CodigoIdentificacao } from '../../../domain/value-objects/codigo-identi
 import { StatusCarga, UnidadeMedida } from '../../../domain/enums.js';
 import { CargaQuimicaOrmEntity } from '../entities/carga-quimica.orm-entity.js';
 import { TypeOrmCargaQuimicaRepository } from './typeorm-carga-quimica.repository.js';
+import { getOrThrow } from '../../../shared/either.js';
 
 describe('TypeOrmCargaQuimicaRepository', () => {
   it('persiste e reidrata a data de criação e a trilha de auditoria', async () => {
@@ -28,23 +29,29 @@ describe('TypeOrmCargaQuimicaRepository', () => {
       getRepository: vi.fn(() => repository),
     } as unknown as DataSource;
 
-    const carga = new CargaQuimicaAggregate({
-      id: 'carga-1',
-      codigoIdentificacao: new CodigoIdentificacao('ABC12345'),
-      produtoQuimicoId: 'produto-1',
-      quantidade: new QuantidadeCarga(100, UnidadeMedida.QUILOGRAMAS),
-      responsavelTecnicoId: 'responsavel-1',
-      origem: 'Santos',
-      destino: 'Rio',
-      dataEntrada: new Date('2026-01-01T00:00:00Z'),
-      dataCriacao: new Date('2025-12-31T23:00:00Z'),
-      grupoCompatibilidade: 'CLASSE_8',
-    });
-    carga.changeStatus(
-      StatusCarga.CANCELADA,
-      'operador-1',
-      'Cancelamento solicitado.',
-      new Date('2026-01-02T00:00:00Z'),
+    const carga = getOrThrow(
+      CargaQuimicaAggregate.create({
+        id: 'carga-1',
+        codigoIdentificacao: getOrThrow(CodigoIdentificacao.create('ABC12345')),
+        produtoQuimicoId: 'produto-1',
+        quantidade: getOrThrow(
+          QuantidadeCarga.create(100, UnidadeMedida.QUILOGRAMAS),
+        ),
+        responsavelTecnicoId: 'responsavel-1',
+        origem: 'Santos',
+        destino: 'Rio',
+        dataEntrada: new Date('2026-01-01T00:00:00Z'),
+        dataCriacao: new Date('2025-12-31T23:00:00Z'),
+        grupoCompatibilidade: 'CLASSE_8',
+      }),
+    );
+    getOrThrow(
+      carga.changeStatus(
+        StatusCarga.CANCELADA,
+        'operador-1',
+        'Cancelamento solicitado.',
+        new Date('2026-01-02T00:00:00Z'),
+      ),
     );
 
     const cargaRepository = new TypeOrmCargaQuimicaRepository(dataSource);
@@ -68,9 +75,53 @@ describe('TypeOrmCargaQuimicaRepository', () => {
 
     expect(recuperada?.status).toBe(StatusCarga.CANCELADA);
     expect(recuperada?.codigoIdentificacao).toEqual(
-      new CodigoIdentificacao('ABC12345'),
+      getOrThrow(CodigoIdentificacao.create('ABC12345')),
     );
     expect(recuperada?.dataCriacao).toEqual(carga.dataCriacao);
     expect(recuperada?.historicoStatus).toEqual(carga.historicoStatus);
+  });
+
+  it('converte a quantidade numeric retornada como texto pelo driver do postgres', async () => {
+    const carga = getOrThrow(
+      CargaQuimicaAggregate.create({
+        id: 'carga-2',
+        codigoIdentificacao: getOrThrow(CodigoIdentificacao.create('XYZ98765')),
+        produtoQuimicoId: 'produto-1',
+        quantidade: getOrThrow(
+          QuantidadeCarga.create(250.5, UnidadeMedida.TONELADAS),
+        ),
+        responsavelTecnicoId: 'responsavel-1',
+        origem: 'Santos',
+        destino: 'Cubatão',
+        dataEntrada: new Date('2026-01-01T00:00:00Z'),
+        dataCriacao: new Date('2025-12-31T23:00:00Z'),
+        grupoCompatibilidade: 'CLASSE_3',
+      }),
+    );
+    let entityPersistida: CargaQuimicaOrmEntity | undefined;
+    const manager = {
+      save: vi.fn(async (_entityClass, entity: CargaQuimicaOrmEntity) => {
+        entity.quantidade.valor = String(
+          entity.quantidade.valor,
+        ) as unknown as number;
+        entityPersistida = entity;
+        return entity;
+      }),
+    };
+    const dataSource = {
+      transaction: vi.fn(
+        async (operacao: (manager: EntityManager) => Promise<void>) =>
+          operacao(manager as unknown as EntityManager),
+      ),
+      getRepository: vi.fn(() => ({
+        findOne: vi.fn(async () => entityPersistida ?? null),
+      })),
+    } as unknown as DataSource;
+
+    const cargaRepository = new TypeOrmCargaQuimicaRepository(dataSource);
+    await cargaRepository.salvar(carga);
+    const recuperada = await cargaRepository.buscarPorId(carga.id);
+
+    expect(recuperada?.quantidade.valor).toBe(250.5);
   });
 });

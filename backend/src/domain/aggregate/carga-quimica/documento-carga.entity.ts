@@ -1,4 +1,6 @@
+import { Either, left, right } from '../../../shared/either.js';
 import { StatusValidacao } from '../../enums.js';
+import { DocumentoCargaInvalidoError } from '../../errors/carga-quimica.errors.js';
 
 export type DocumentoCargaProps = {
   id: string;
@@ -19,19 +21,7 @@ export class DocumentoCarga {
   public readonly dataValidade: Date;
   public statusValidacao: StatusValidacao;
 
-  constructor(props: DocumentoCargaProps) {
-    if (!props.id || !props.tipoDocumento || !props.numeroReferencia || !props.urlArquivo) {
-      throw new Error('Documento da carga inválido: dados obrigatórios faltando.');
-    }
-
-    if (!(props.dataEmissao instanceof Date) || Number.isNaN(props.dataEmissao.getTime())) {
-      throw new Error('Data de emissão do documento inválida.');
-    }
-
-    if (!(props.dataValidade instanceof Date) || Number.isNaN(props.dataValidade.getTime())) {
-      throw new Error('Data de validade do documento inválida.');
-    }
-
+  private constructor(props: DocumentoCargaProps) {
     this.id = props.id;
     this.tipoDocumento = props.tipoDocumento;
     this.numeroReferencia = props.numeroReferencia;
@@ -39,6 +29,22 @@ export class DocumentoCarga {
     this.dataEmissao = props.dataEmissao;
     this.dataValidade = props.dataValidade;
     this.statusValidacao = props.statusValidacao ?? StatusValidacao.PENDENTE;
+  }
+
+  static create(props: DocumentoCargaProps): Either<DocumentoCargaInvalidoError, DocumentoCarga> {
+    if (!props.id || !props.tipoDocumento || !props.numeroReferencia || !props.urlArquivo) {
+      return left(new DocumentoCargaInvalidoError('Documento da carga inválido: dados obrigatórios faltando.'));
+    }
+
+    if (!(props.dataEmissao instanceof Date) || Number.isNaN(props.dataEmissao.getTime())) {
+      return left(new DocumentoCargaInvalidoError('Data de emissão do documento inválida.'));
+    }
+
+    if (!(props.dataValidade instanceof Date) || Number.isNaN(props.dataValidade.getTime())) {
+      return left(new DocumentoCargaInvalidoError('Data de validade do documento inválida.'));
+    }
+
+    return right(new DocumentoCarga(props));
   }
 
   estaVencido(agora: Date = new Date()): boolean {

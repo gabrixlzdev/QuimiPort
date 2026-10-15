@@ -1,3 +1,5 @@
+import { Either, left, right } from '../../shared/either.js';
+import { ProdutoQuimicoInvalidoError } from '../errors/produto-quimico.errors.js';
 import { ClassificacaoRisco } from '../value-objects/classificacao-risco.vo.js';
 
 export type ProdutoQuimicoProps = {
@@ -21,11 +23,7 @@ export class ProdutoQuimico {
   public readonly dataCadastro: Date;
   public dataAtualizacao: Date;
 
-  constructor(props: ProdutoQuimicoProps) {
-    if (!props.id || !props.nome || !props.descricao) {
-      throw new Error('Produto químico inválido: id, nome e descrição são obrigatórios.');
-    }
-
+  private constructor(props: ProdutoQuimicoProps) {
     this.id = props.id;
     this.nome = props.nome.trim();
     this.descricao = props.descricao.trim();
@@ -34,6 +32,18 @@ export class ProdutoQuimico {
     this.ativo = props.ativo ?? true;
     this.dataCadastro = props.dataCadastro ?? new Date();
     this.dataAtualizacao = props.dataAtualizacao ?? this.dataCadastro;
+  }
+
+  static create(props: ProdutoQuimicoProps): Either<ProdutoQuimicoInvalidoError, ProdutoQuimico> {
+    if (!props.id || !props.nome || !props.descricao) {
+      return left(new ProdutoQuimicoInvalidoError('Produto químico inválido: id, nome e descrição são obrigatórios.'));
+    }
+
+    if (!props.classificacaoRisco) {
+      return left(new ProdutoQuimicoInvalidoError('Produto químico inválido: classificação de risco é obrigatória.'));
+    }
+
+    return right(new ProdutoQuimico(props));
   }
 
   inativar(): void {
