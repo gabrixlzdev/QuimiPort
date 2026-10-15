@@ -98,6 +98,14 @@ export class DocumentoVencidoError extends RegraNegocioError {
   }
 }
 
+export class InspecaoForaDeEtapaError extends RegraNegocioError {
+  constructor(public readonly statusAtual: StatusCarga) {
+    super(
+      `Inspeção só pode ser registrada em carga EM_ANALISE ou EM_INSPECAO (status atual: ${statusAtual}).`,
+    );
+  }
+}
+
 export class InspecaoNaoAprovadaError extends RegraNegocioError {
   constructor() {
     super('Impossível liberar: nenhuma inspeção aprovada.');

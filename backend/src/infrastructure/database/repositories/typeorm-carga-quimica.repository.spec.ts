@@ -65,7 +65,7 @@ describe('TypeOrmCargaQuimicaRepository', () => {
     expect(entityPersistida?.historicoStatus[1]).toMatchObject({
       id: 'carga-1-status-1',
       sequencia: 1,
-      statusAnterior: StatusCarga.AGUARDANDO_DOCUMENTACAO,
+      statusAnterior: StatusCarga.REGISTRADA,
       statusNovo: StatusCarga.CANCELADA,
       responsavelId: 'operador-1',
       motivo: 'Cancelamento solicitado.',

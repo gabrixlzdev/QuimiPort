@@ -124,8 +124,8 @@ A tabela `carga_quimica` manterá o status atual da carga em uma coluna `status`
 
 ```ts
 export enum StatusCarga {
-  AGUARDANDO_DOCUMENTACAO = "AGUARDANDO_DOCUMENTACAO",
-  DOCUMENTACAO_VALIDADA = "DOCUMENTACAO_VALIDADA",
+  REGISTRADA = "REGISTRADA",
+  EM_ANALISE = "EM_ANALISE",
   EM_INSPECAO = "EM_INSPECAO",
   LIBERADA = "LIBERADA",
   EM_MOVIMENTACAO = "EM_MOVIMENTACAO",
@@ -157,13 +157,13 @@ A criação da carga também registra um evento inicial com `status_anterior` nu
 Cargas existentes antes da ativação dessa tabela precisam de backfill explícito do evento inicial antes de serem lidas pelo repositório com histórico. A aplicação não infere transições passadas nem cria uma trilha fictícia; a reidratação falha explicitamente se a trilha estiver ausente ou inconsistente.
 
 ```text
-AGUARDANDO_DOCUMENTACAO -> DOCUMENTACAO_VALIDADA -> EM_INSPECAO -> LIBERADA -> EM_MOVIMENTACAO -> FINALIZADA
+REGISTRADA -> EM_ANALISE -> EM_INSPECAO -> LIBERADA -> EM_MOVIMENTACAO -> FINALIZADA
 ```
 
 ou, em cenários de exceção:
 
 ```text
-DOCUMENTACAO_VALIDADA -> BLOQUEADA -> CANCELADA
+REGISTRADA -> EM_ANALISE -> EM_INSPECAO -> BLOQUEADA -> CANCELADA
 ```
 
 Esse registro é essencial para auditoria, conformidade regulatória e análise operacional em incidentes, bloqueios e cancelamentos.
