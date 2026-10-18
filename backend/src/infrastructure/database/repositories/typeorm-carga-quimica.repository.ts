@@ -78,6 +78,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
     entity.dataEntrada = carga.dataEntrada;
     entity.dataCriacao = carga.dataCriacao;
     entity.grupoCompatibilidade = carga.grupoCompatibilidade;
+    entity.autorizacaoSuperiorId = carga.autorizacaoSuperiorId ?? null;
     entity.status = carga.status;
     entity.documentos = carga.documentos.map((documento) => {
       const documentoEntity = Object.assign(new DocumentoCargaOrmEntity(), {
@@ -138,6 +139,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
         dataEntrada: entity.dataEntrada,
         dataCriacao: entity.dataCriacao,
         grupoCompatibilidade: entity.grupoCompatibilidade,
+        autorizacaoSuperiorId: entity.autorizacaoSuperiorId ?? undefined,
         status: entity.status,
       },
       [...entity.historicoStatus]

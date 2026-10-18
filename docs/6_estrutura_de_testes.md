@@ -32,12 +32,12 @@ Legenda: **X** = cobertura obrigatória; **—** = não agrega confiança propor
 | RN-CRQ-09, RN-DOC-02, RN-DOC-03, RN-DOC-04, RN-DOC-05 | Checklist obrigatório, status documental e vigência calculada | X | X | X |
 | RN-CRQ-10 | Carga bloqueada não se movimenta nem é liberada | X | X | X |
 | RN-CRQ-11 | Carga cancelada é terminal | X | — | X |
-| RN-CRQ-12 | Registro retroativo exige aprovação superior | X | X | X |
+| RN-CRQ-12 | Registro retroativo exige `autorizacaoSuperiorId`, persistida para auditoria | X | X | X |
 | RN-RTC-02, RN-RTC-03 | CPF e registro profissional válidos | X | — | — |
 | RN-INS-02, RN-INS-03, RN-INS-04 | Carga, data e inspetor obrigatórios na inspeção | X | X | — |
 | RN-ARM-02, RN-ARM-03, RN-ARM-04, RN-ARM-05 | Estado, carga, ocupação e capacidade da área | X | X | — |
 
-As jornadas E2E prioritárias são: registrar carga com produto ativo; rejeitar produto inativo; validar documentos e impedir documento vencido; registrar inspeção aprovada e liberar formalmente; bloquear carga e impedir movimentação; cancelar carga e impedir novas transições.
+As jornadas E2E prioritárias são: registrar carga com produto ativo; rejeitar produto ausente/inativo ou com compatibilidade divergente; exigir aprovação informada no registro retroativo; validar documentos e impedir documento vencido; registrar inspeção aprovada e liberar formalmente; iniciar e concluir movimentação apenas nas etapas permitidas; cancelar carga antes do início da movimentação; impedir alterações após cancelamento ou conclusão.
 
 ## 6.3 Cenários unitários essenciais
 

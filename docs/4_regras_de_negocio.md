@@ -23,7 +23,7 @@
 | ID            | Descrição da Regra                                                                              | Camada de Proteção       | Implementação / Mecanismo                                                                                               |
 | :------------ | :---------------------------------------------------------------------------------------------- | :----------------------- | :---------------------------------------------------------------------------------------------------------------------- |
 | **RN-CRQ-01** | Toda carga química recebe um ID definido automaticamente.                                       | Aplicação                | UUIDv4 gerado na aplicação com prefixo `CRQ-`; PK mapeada em coluna ORM `varchar`; persistido no PostgreSQL via TypeORM. |
-| **RN-CRQ-02** | Toda carga química deve ser cadastrada com um produto químico ativo associado.                  | Domínio / Agregado       | Invariante da raiz do agregado `CargaQuimica`.                                                                          |
+| **RN-CRQ-02** | Toda carga química deve ser cadastrada com um produto químico ativo associado e grupo de compatibilidade correspondente. | Aplicação / Use Case | Consulta ao produto por ID; rejeita produto ausente/inativo ou grupo divergente antes de criar a carga. |
 | **RN-CRQ-03** | Toda carga química deve ter quantidade maior que zero.                                          | Domínio / Value Object   | Validação do VO `QuantidadeCarga`.                                                                                      |
 | **RN-CRQ-04** | Toda carga química é criada com status inicial `REGISTRADA` (Aguardando Documentação).          | Domínio / Agregado       | Definido no construtor do Agregado `CargaQuimica`.                                                                      |
 | **RN-CRQ-05** | Toda carga química deve ser cadastrada com um responsável técnico associado.                    | Domínio / Agregado       | Invariante obrigatória de criação.                                                                                      |
@@ -33,7 +33,7 @@
 | **RN-CRQ-09** | Uma carga química não pode ser liberada sem toda a documentação obrigatória validada e vigente. | Domínio / Agregado       | Validação do checklist e da vigência em `liberar(agora)`.                                                               |
 | **RN-CRQ-10** | Uma carga química bloqueada não pode entrar em movimentação.                                    | Domínio / Máquina Estado | Bloqueio de métodos de transição no status `BLOQUEADA`.                                                                 |
 | **RN-CRQ-11** | Uma carga química cancelada não pode ter seu status alterado.                                   | Domínio / Máquina Estado | Estado terminal: retorna `Left<CargaCanceladaError>` em qualquer transição.                                             |
-| **RN-CRQ-12** | Registro de carga com data retroativa exige aprovação de cargo superior.                        | Aplicação / Policy       | Policy de liberação/aprovação de registro retroativo.                                                                   |
+| **RN-CRQ-12** | Registro de carga com data retroativa exige aprovação de cargo superior.                        | Aplicação / Policy       | Exige e persiste `autorizacaoSuperiorId`; a autorização do perfil depende da futura integração de autenticação/roles. |
 
 ---
 

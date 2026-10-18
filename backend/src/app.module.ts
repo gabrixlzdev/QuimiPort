@@ -14,6 +14,9 @@ import { LiberarCargaUseCase } from './application/use-cases/cargas/liberar-carg
 import { BloquearCargaUseCase } from './application/use-cases/cargas/bloquear-carga.use-case.js';
 import { RealizarInspecaoUseCase } from './application/use-cases/inspecoes/realizar-inspecao.use-case.js';
 import { AnexarDocumentoUseCase } from './application/use-cases/cargas/anexar-documento.use-case.js';
+import { CancelarCargaUseCase } from './application/use-cases/cargas/cancelar-carga.use-case.js';
+import { ConcluirMovimentacaoUseCase } from './application/use-cases/cargas/concluir-movimentacao.use-case.js';
+import { IniciarMovimentacaoUseCase } from './application/use-cases/cargas/iniciar-movimentacao.use-case.js';
 import { CadastrarResponsavelTecnicoUseCase } from './application/use-cases/responsaveis/cadastrar-responsavel-tecnico.use-case.js';
 import { ResponsavelTecnicoRepository } from './domain/repositories/responsavel-tecnico.repository.interface.js';
 import { CadastrarAreaArmazenamentoUseCase } from './application/use-cases/areas/cadastrar-area-armazenamento.use-case.js';
@@ -123,8 +126,13 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
       useFactory: (
         cargaRepo: TypeOrmCargaQuimicaRepository,
         responsavelRepo: ResponsavelTecnicoRepository,
-      ) => new RegistrarCargaUseCase(cargaRepo, responsavelRepo),
-      inject: [TypeOrmCargaQuimicaRepository, 'ResponsavelTecnicoRepository'],
+        produtoRepo: TypeOrmProdutoQuimicoRepository,
+      ) => new RegistrarCargaUseCase(cargaRepo, responsavelRepo, produtoRepo),
+      inject: [
+        TypeOrmCargaQuimicaRepository,
+        'ResponsavelTecnicoRepository',
+        TypeOrmProdutoQuimicoRepository,
+      ],
     },
     {
       provide: ValidarDocumentacaoUseCase,
@@ -154,6 +162,24 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
       provide: AnexarDocumentoUseCase,
       useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
         new AnexarDocumentoUseCase(repo),
+      inject: [TypeOrmCargaQuimicaRepository],
+    },
+    {
+      provide: IniciarMovimentacaoUseCase,
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
+        new IniciarMovimentacaoUseCase(repo),
+      inject: [TypeOrmCargaQuimicaRepository],
+    },
+    {
+      provide: CancelarCargaUseCase,
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
+        new CancelarCargaUseCase(repo),
+      inject: [TypeOrmCargaQuimicaRepository],
+    },
+    {
+      provide: ConcluirMovimentacaoUseCase,
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
+        new ConcluirMovimentacaoUseCase(repo),
       inject: [TypeOrmCargaQuimicaRepository],
     },
     {

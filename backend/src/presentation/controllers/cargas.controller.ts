@@ -5,6 +5,9 @@ import { LiberarCargaUseCase } from '../../application/use-cases/cargas/liberar-
 import { BloquearCargaUseCase } from '../../application/use-cases/cargas/bloquear-carga.use-case.js';
 import { RealizarInspecaoUseCase } from '../../application/use-cases/inspecoes/realizar-inspecao.use-case.js';
 import { AnexarDocumentoUseCase } from '../../application/use-cases/cargas/anexar-documento.use-case.js';
+import { CancelarCargaUseCase } from '../../application/use-cases/cargas/cancelar-carga.use-case.js';
+import { ConcluirMovimentacaoUseCase } from '../../application/use-cases/cargas/concluir-movimentacao.use-case.js';
+import { IniciarMovimentacaoUseCase } from '../../application/use-cases/cargas/iniciar-movimentacao.use-case.js';
 import * as cargaQuimicaDto from '../../application/dtos/carga-quimica.dto.js';
 import { toHttpException } from '../errors/domain-error-http.mapper.js';
 
@@ -17,6 +20,9 @@ export class CargasController {
     private readonly liberarCargaUseCase: LiberarCargaUseCase,
     private readonly bloquearCargaUseCase: BloquearCargaUseCase,
     private readonly anexarDocumentoUseCase: AnexarDocumentoUseCase,
+    private readonly iniciarMovimentacaoUseCase: IniciarMovimentacaoUseCase,
+    private readonly cancelarCargaUseCase: CancelarCargaUseCase,
+    private readonly concluirMovimentacaoUseCase: ConcluirMovimentacaoUseCase,
   ) {}
 
   @Post()
@@ -98,5 +104,50 @@ export class CargasController {
     if (resultado.kind === 'left') throw toHttpException(resultado.error);
 
     return { mensagem: 'Carga bloqueada com sucesso.' };
+  }
+
+  @Post(':id/iniciar-movimentacao')
+  async iniciarMovimentacao(
+    @Param('id') cargaQuimicaId: string,
+    @Body()
+    body: Omit<cargaQuimicaDto.AlterarStatusCargaInputDto, 'cargaQuimicaId'>,
+  ): Promise<{ mensagem: string }> {
+    const resultado = await this.iniciarMovimentacaoUseCase.execute({
+      ...body,
+      cargaQuimicaId,
+    });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return { mensagem: 'Movimentação iniciada com sucesso.' };
+  }
+
+  @Post(':id/cancelar')
+  async cancelar(
+    @Param('id') cargaQuimicaId: string,
+    @Body()
+    body: Omit<cargaQuimicaDto.AlterarStatusCargaInputDto, 'cargaQuimicaId'>,
+  ): Promise<{ mensagem: string }> {
+    const resultado = await this.cancelarCargaUseCase.execute({
+      ...body,
+      cargaQuimicaId,
+    });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return { mensagem: 'Carga cancelada com sucesso.' };
+  }
+
+  @Post(':id/concluir-movimentacao')
+  async concluirMovimentacao(
+    @Param('id') cargaQuimicaId: string,
+    @Body()
+    body: Omit<cargaQuimicaDto.AlterarStatusCargaInputDto, 'cargaQuimicaId'>,
+  ): Promise<{ mensagem: string }> {
+    const resultado = await this.concluirMovimentacaoUseCase.execute({
+      ...body,
+      cargaQuimicaId,
+    });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return { mensagem: 'Movimentação concluída com sucesso.' };
   }
 }

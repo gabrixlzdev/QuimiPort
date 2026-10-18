@@ -43,6 +43,7 @@ describe('TypeOrmCargaQuimicaRepository', () => {
         dataEntrada: new Date('2026-01-01T00:00:00Z'),
         dataCriacao: new Date('2025-12-31T23:00:00Z'),
         grupoCompatibilidade: 'CLASSE_8',
+        autorizacaoSuperiorId: 'gestor-superior-1',
       }),
     );
     getOrThrow(
@@ -61,6 +62,7 @@ describe('TypeOrmCargaQuimicaRepository', () => {
     expect(manager.save).toHaveBeenCalledOnce();
     expect(entityPersistida?.dataCriacao).toEqual(carga.dataCriacao);
     expect(entityPersistida?.codigoIdentificacao).toBe('ABC12345');
+    expect(entityPersistida?.autorizacaoSuperiorId).toBe('gestor-superior-1');
     expect(entityPersistida?.historicoStatus).toHaveLength(2);
     expect(entityPersistida?.historicoStatus[1]).toMatchObject({
       id: 'carga-1-status-1',
@@ -78,6 +80,7 @@ describe('TypeOrmCargaQuimicaRepository', () => {
       getOrThrow(CodigoIdentificacao.create('ABC12345')),
     );
     expect(recuperada?.dataCriacao).toEqual(carga.dataCriacao);
+    expect(recuperada?.autorizacaoSuperiorId).toBe('gestor-superior-1');
     expect(recuperada?.historicoStatus).toEqual(carga.historicoStatus);
   });
 
