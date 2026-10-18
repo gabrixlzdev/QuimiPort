@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AreaArmazenamento } from '../../../domain/entities/area-armazenamento.entity.js';
 import { AreaArmazenamentoRepository } from '../../../domain/repositories/area-armazenamento.repository.interface.js';
+import { getOrThrow } from '../../../shared/either.js';
 import { AreaArmazenamentoOrmEntity } from '../entities/area-armazenamento.orm-entity.js';
 
 @Injectable()
@@ -44,14 +45,16 @@ export class TypeOrmAreaArmazenamentoRepository implements AreaArmazenamentoRepo
   }
 
   private toDomain(entity: AreaArmazenamentoOrmEntity): AreaArmazenamento {
-    return new AreaArmazenamento({
-      id: entity.id,
-      nome: entity.nome,
-      codigo: entity.codigo,
-      tipo: entity.tipo,
-      cargaQuimicaId: entity.carga.id,
-      capacidadeMaxima: entity.capacidadeMaxima,
-      quantidadeOcupada: entity.quantidadeOcupada,
-    });
+    return getOrThrow(
+      AreaArmazenamento.create({
+        id: entity.id,
+        nome: entity.nome,
+        codigo: entity.codigo,
+        tipo: entity.tipo,
+        cargaQuimicaId: entity.carga.id,
+        capacidadeMaxima: entity.capacidadeMaxima,
+        quantidadeOcupada: entity.quantidadeOcupada,
+      }),
+    );
   }
 }

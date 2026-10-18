@@ -45,8 +45,12 @@ src/
 │   │   ├── carga-quimica.repository.interface.ts
 │   │   ├── produto-quimico.repository.interface.ts
 │   │   └── area-armazenamento.repository.interface.ts
-│   └── errors/                           # Erros de Domínio Personalizados
-│       └── domain.error.ts
+│   └── errors/                           # Erros de Domínio Personalizados (Left)
+│       ├── domain.error.ts               # Base DomainError e categorias de erro
+│       ├── carga-quimica.errors.ts       # [RN-CRQ], [RN-DOC], [RN-INS]
+│       ├── produto-quimico.errors.ts     # [RN-PRQ]
+│       ├── responsavel-tecnico.errors.ts # [RN-RTC]
+│       └── area-armazenamento.errors.ts  # [RN-ARM]
 │
 ├── application/                          # Camada de Aplicação (Casos de Uso)
 │   ├── use-cases/                        # Implementação dos Casos de Uso
@@ -65,12 +69,16 @@ src/
 │       └── produto-quimico.dto.ts
 │
 ├── infrastructure/                       # Camada de Infraestrutura
-│   ├── database/                         # Persistência e Mapeamento
-│   │   └── repositories/                 # Implementação Concreta das Interfaces
-│   └── shared/                           # Padrão Either e Result Types
+│   └── database/                         # Persistência e Mapeamento
+│       └── repositories/                 # Implementação Concreta das Interfaces
 │
-└── presentation/                         # Camada de Apresentação
-    └── controllers/                      # Controllers da API REST
+├── presentation/                         # Camada de Apresentação
+│   ├── controllers/                      # Controllers da API REST
+│   └── errors/
+│       └── domain-error-http.mapper.ts   # Converte Left em resposta HTTP
+│
+└── shared/                               # Elementos transversais
+    └── either.ts                         # Padrão Either e Result Types
 ```
 
 ## 5.3 Persistência Relacional e Mapeamento do Banco de Dados
@@ -279,6 +287,19 @@ Essa distinção também é importante para separar dois tipos de falha:
 Portanto, o padrão `Either / Result` não é apenas uma convenção de programação funcional: ele materializa a semântica do domínio no contrato da aplicação, deixando explícitas as falhas que o negócio reconhece e exigindo tratamento consciente antes de qualquer continuação do fluxo.
 
 Exceções e `try/catch` ficam reservados para falhas técnicas inesperadas, como indisponibilidade do banco, timeout ou erro de rede. A apresentação converte `Left` em resposta adequada e uma exceção técnica em 500/503, sem expor detalhes internos.
+
+Todo erro de negócio estende `DomainError` por meio de uma das quatro categorias abaixo, e o `domain-error-http.mapper.ts` define o status HTTP pela categoria, sem que o domínio conheça HTTP:
+
+| Categoria                   | Exemplos                                                                 | HTTP |
+| :-------------------------- | :----------------------------------------------------------------------- | :--- |
+| `DadosInvalidosError`       | `QuantidadeInvalidaError`, `CPFInvalidoError`, `ClassificacaoRiscoInvalidaError` | 400  |
+| `RecursoNaoEncontradoError` | `CargaNaoEncontradaError`, `ResponsavelTecnicoNaoEncontradoError`        | 404  |
+| `ConflitoError`             | `ProdutoQuimicoDuplicadoError`                                           | 409  |
+| `RegraNegocioError`         | `CargaBloqueadaError`, `CargaCanceladaError`, `DocumentoVencidoError`, `TransicaoStatusInvalidaError` | 422  |
+
+O corpo da resposta segue o formato `{ statusCode, erro, mensagem }`, em que `erro` é o nome da classe do erro de domínio.
+
+Value Objects e entidades possuem construtor privado e fábrica estática `create()` que retorna `Either`. Na reidratação a partir do banco, um `Left` indica dado persistido corrompido, ou seja, falha técnica: o repositório usa `getOrThrow` e a exceção resulta em 500.
 
 ## 5.5 Práticas adotadas sem ampliar o escopo
 

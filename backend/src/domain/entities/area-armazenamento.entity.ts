@@ -1,4 +1,9 @@
+import { Either, left, right } from '../../shared/either.js';
 import { StatusAreaArmazenamento } from '../enums.js';
+import {
+  AreaArmazenamentoInvalidaError,
+  CapacidadeExcedidaError,
+} from '../errors/area-armazenamento.errors.js';
 
 export type AreaArmazenamentoProps = {
   id: string;
@@ -20,37 +25,7 @@ export class AreaArmazenamento {
   public readonly quantidadeOcupada: number;
   public readonly status: StatusAreaArmazenamento;
 
-  constructor(props: AreaArmazenamentoProps) {
-    if (!props.id || !props.nome || !props.codigo) {
-      throw new Error('Área de armazenamento inválida.');
-    }
-
-    if (!props.cargaQuimicaId?.trim()) {
-      throw new Error(
-        'Área de armazenamento deve estar associada a uma carga química.',
-      );
-    }
-
-    if (
-      !Number.isFinite(props.capacidadeMaxima) ||
-      props.capacidadeMaxima <= 0
-    ) {
-      throw new Error('Capacidade máxima deve ser maior que zero.');
-    }
-
-    if (
-      !Number.isFinite(props.quantidadeOcupada) ||
-      props.quantidadeOcupada <= 0
-    ) {
-      throw new Error('Quantidade ocupada deve ser maior que zero.');
-    }
-
-    if (props.quantidadeOcupada > props.capacidadeMaxima) {
-      throw new Error(
-        'Quantidade ocupada não pode exceder a capacidade máxima da área.',
-      );
-    }
-
+  private constructor(props: AreaArmazenamentoProps) {
     this.id = props.id;
     this.nome = props.nome.trim();
     this.codigo = props.codigo.trim();
@@ -62,5 +37,54 @@ export class AreaArmazenamento {
       this.quantidadeOcupada === this.capacidadeMaxima
         ? StatusAreaArmazenamento.LOTADA
         : StatusAreaArmazenamento.COM_ESPACO;
+  }
+
+  static create(
+    props: AreaArmazenamentoProps,
+  ): Either<
+    AreaArmazenamentoInvalidaError | CapacidadeExcedidaError,
+    AreaArmazenamento
+  > {
+    if (!props.id || !props.nome || !props.codigo) {
+      return left(
+        new AreaArmazenamentoInvalidaError('Área de armazenamento inválida.'),
+      );
+    }
+
+    if (!props.cargaQuimicaId?.trim()) {
+      return left(
+        new AreaArmazenamentoInvalidaError(
+          'Área de armazenamento deve estar associada a uma carga química.',
+        ),
+      );
+    }
+
+    if (
+      !Number.isFinite(props.capacidadeMaxima) ||
+      props.capacidadeMaxima <= 0
+    ) {
+      return left(
+        new AreaArmazenamentoInvalidaError(
+          'Capacidade máxima deve ser maior que zero.',
+        ),
+      );
+    }
+
+    if (
+      !Number.isFinite(props.quantidadeOcupada) ||
+      props.quantidadeOcupada <= 0
+    ) {
+      return left(
+        new AreaArmazenamentoInvalidaError(
+          'Quantidade ocupada deve ser maior que zero.',
+        ),
+      );
+    }
+
+    if (props.quantidadeOcupada > props.capacidadeMaxima) {
+      return left(new CapacidadeExcedidaError());
+    }
+
+    return right(new AreaArmazenamento(props));
   }
 }

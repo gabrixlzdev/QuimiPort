@@ -6,31 +6,50 @@ import {
   ResultadoInspecao,
   UnidadeMedida,
 } from '../../enums.js';
-import { DocumentoCarga } from './documento-carga.entity.js';
-import { Inspecao } from '../../entities/inspecao.entity.js';
+import {
+  AuditoriaStatusInvalidaError,
+  CargaBloqueadaError,
+  CargaCanceladaError,
+  CargaQuimicaInvalidaError,
+  DocumentoObrigatorioAusenteError,
+  DocumentoPendenteError,
+  DocumentoRejeitadoError,
+  DocumentoVencidoError,
+  InspecaoNaoAprovadaError,
+  JustificativaLiberacaoObrigatoriaError,
+  TransicaoStatusInvalidaError,
+} from '../../errors/carga-quimica.errors.js';
+import {
+  DocumentoCarga,
+  DocumentoCargaProps,
+} from './documento-carga.entity.js';
+import { Inspecao, InspecaoProps } from '../../entities/inspecao.entity.js';
 import { QuantidadeCarga } from '../../value-objects/quantidade-carga.vo.js';
 import { CodigoIdentificacao } from '../../value-objects/codigo-identificacao.vo.js';
+import { getOrThrow } from '../../../shared/either.js';
 
 describe('CargaQuimicaAggregate', () => {
+  const propsCarga = () => ({
+    id: 'carga-1',
+    codigoIdentificacao: getOrThrow(CodigoIdentificacao.create('ABC12345')),
+    produtoQuimicoId: 'produto-1',
+    quantidade: getOrThrow(
+      QuantidadeCarga.create(1200, UnidadeMedida.QUILOGRAMAS),
+    ),
+    responsavelTecnicoId: 'responsavel-1',
+    origem: 'Santos',
+    destino: 'Rio',
+    dataEntrada: new Date('2026-01-01T00:00:00Z'),
+    dataCriacao: new Date('2025-12-31T23:00:00Z'),
+    grupoCompatibilidade: 'CLASSE_8',
+  });
+
   const criarCarga = () =>
-    new CargaQuimicaAggregate({
-      id: 'carga-1',
-      codigoIdentificacao: new CodigoIdentificacao('ABC12345'),
-      produtoQuimicoId: 'produto-1',
-      quantidade: new QuantidadeCarga(1200, UnidadeMedida.QUILOGRAMAS),
-      responsavelTecnicoId: 'responsavel-1',
-      origem: 'Santos',
-      destino: 'Rio',
-      dataEntrada: new Date('2026-01-01T00:00:00Z'),
-      dataCriacao: new Date('2025-12-31T23:00:00Z'),
-      grupoCompatibilidade: 'CLASSE_8',
-    });
+    getOrThrow(CargaQuimicaAggregate.create(propsCarga()));
 
-  it('deve liberar carga com documentação válida e inspeção aprovada', () => {
-    const carga = criarCarga();
-
-    carga.anexarDocumento(
-      new DocumentoCarga({
+  const criarDocumento = (props: Partial<DocumentoCargaProps> = {}) =>
+    getOrThrow(
+      DocumentoCarga.create({
         id: 'doc-1',
         tipoDocumento: 'FDS',
         numeroReferencia: 'REF-001',
@@ -38,23 +57,51 @@ describe('CargaQuimicaAggregate', () => {
         dataEmissao: new Date('2025-01-01'),
         dataValidade: new Date('2030-01-01'),
         statusValidacao: StatusValidacao.VALIDADO,
+        ...props,
       }),
     );
 
-    carga.registrarInspecao(
-      new Inspecao({
+  const criarInspecao = (props: Partial<InspecaoProps> = {}) =>
+    getOrThrow(
+      Inspecao.create({
         id: 'inspecao-1',
         dataSolicitacao: new Date('2026-01-02'),
         dataRealizacao: new Date('2026-01-03'),
         inspetorId: 'inspetor-1',
         resultado: ResultadoInspecao.APROVADO,
         observacoes: 'Tudo conforme',
+        ...props,
       }),
     );
 
-    expect(() =>
-      carga.liberarCarga('Liberado após validação', 'operador-1'),
-    ).not.toThrow();
+  const criarCargaEmInspecaoAprovada = (documento: DocumentoCarga) => {
+    const carga = criarCarga();
+    getOrThrow(carga.anexarDocumento(documento));
+    getOrThrow(carga.registrarInspecao(criarInspecao()));
+    return carga;
+  };
+
+  it('deve rejeitar criação sem dados obrigatórios', () => {
+    const resultado = CargaQuimicaAggregate.create({
+      ...propsCarga(),
+      responsavelTecnicoId: '',
+    });
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(CargaQuimicaInvalidaError);
+    }
+  });
+
+  it('deve liberar carga com documentação válida e inspeção aprovada', () => {
+    const carga = criarCargaEmInspecaoAprovada(criarDocumento());
+
+    const resultado = carga.liberarCarga(
+      'Liberado após validação',
+      'operador-1',
+    );
+
+    expect(resultado.kind).toBe('right');
     expect(carga.status).toBe(StatusCarga.LIBERADA);
     expect(carga.historicoStatus.map((evento) => evento.statusNovo)).toEqual([
       StatusCarga.AGUARDANDO_DOCUMENTACAO,
@@ -74,17 +121,15 @@ describe('CargaQuimicaAggregate', () => {
   it('deve bloquear carga quando a inspeção é reprovada', () => {
     const carga = criarCarga();
 
-    carga.registrarInspecao(
-      new Inspecao({
+    const resultado = carga.registrarInspecao(
+      criarInspecao({
         id: 'inspecao-2',
-        dataSolicitacao: new Date('2026-01-02'),
-        dataRealizacao: new Date('2026-01-03'),
-        inspetorId: 'inspetor-1',
         resultado: ResultadoInspecao.REPROVADO,
         observacoes: 'Embalagem danificada',
       }),
     );
 
+    expect(resultado.kind).toBe('right');
     expect(carga.status).toBe(StatusCarga.BLOQUEADA);
     expect(carga.historicoStatus.at(-1)).toMatchObject({
       statusAnterior: StatusCarga.AGUARDANDO_DOCUMENTACAO,
@@ -94,74 +139,193 @@ describe('CargaQuimicaAggregate', () => {
     });
   });
 
-  it('deve rejeitar tentativa de liberar sem documentação válida', () => {
+  it('deve rejeitar tentativa de liberar sem documentação anexada', () => {
     const carga = criarCarga();
+    getOrThrow(carga.registrarInspecao(criarInspecao()));
 
-    carga.registrarInspecao(
-      new Inspecao({
-        id: 'inspecao-3',
-        dataSolicitacao: new Date('2026-01-02'),
-        dataRealizacao: new Date('2026-01-03'),
-        inspetorId: 'inspetor-1',
-        resultado: ResultadoInspecao.APROVADO,
-        observacoes: 'Tudo ok',
-      }),
+    const resultado = carga.liberarCarga('Sem documentação', 'operador-1');
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(DocumentoObrigatorioAusenteError);
+    }
+    expect(carga.status).toBe(StatusCarga.EM_INSPECAO);
+  });
+
+  it('deve rejeitar tentativa de liberar com documento pendente de validação', () => {
+    const carga = criarCargaEmInspecaoAprovada(
+      criarDocumento({ statusValidacao: StatusValidacao.PENDENTE }),
     );
 
-    expect(() =>
-      carga.liberarCarga('Sem documentação válida', 'operador-1'),
-    ).toThrow(/Documentação incompleta|Impossível liberar/i);
+    const resultado = carga.liberarCarga('Documento pendente', 'operador-1');
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(DocumentoPendenteError);
+    }
+    expect(carga.status).toBe(StatusCarga.EM_INSPECAO);
+  });
+
+  it('deve rejeitar tentativa de liberar com documento rejeitado', () => {
+    const carga = criarCargaEmInspecaoAprovada(
+      criarDocumento({ statusValidacao: StatusValidacao.REJEITADO }),
+    );
+
+    const resultado = carga.liberarCarga('Documento rejeitado', 'operador-1');
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(DocumentoRejeitadoError);
+    }
+    expect(carga.status).toBe(StatusCarga.EM_INSPECAO);
+  });
+
+  it('impede liberação quando um documento validado venceu [RN-CRQ-09, RN-DOC-05]', () => {
+    const agora = new Date('2026-08-16T12:00:00Z');
+    const carga = criarCargaEmInspecaoAprovada(
+      criarDocumento({ dataValidade: new Date('2026-08-15T23:59:59Z') }),
+    );
+
+    const resultado = carga.liberarCarga(
+      'Documento vencido',
+      'operador-1',
+      agora,
+    );
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(DocumentoVencidoError);
+    }
+    expect(carga.status).toBe(StatusCarga.EM_INSPECAO);
   });
 
   it('deve rejeitar tentativa de liberar sem inspeção aprovada', () => {
     const carga = criarCarga();
+    getOrThrow(carga.anexarDocumento(criarDocumento({ id: 'doc-2' })));
 
-    carga.anexarDocumento(
-      new DocumentoCarga({
-        id: 'doc-2',
-        tipoDocumento: 'FDS',
-        numeroReferencia: 'REF-002',
-        urlArquivo: 'https://example.com/fds-2.pdf',
-        dataEmissao: new Date('2025-01-01'),
-        dataValidade: new Date('2030-01-01'),
-        statusValidacao: StatusValidacao.VALIDADO,
-      }),
-    );
+    const resultado = carga.liberarCarga('Sem inspeção aprovada', 'operador-1');
 
-    expect(() =>
-      carga.liberarCarga('Sem inspeção aprovada', 'operador-1'),
-    ).toThrow(/Nenhuma inspeção aprovada|Impossível liberar/i);
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(InspecaoNaoAprovadaError);
+    }
+    expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
   });
 
-  it('deve impedir anexar documento em carga cancelada', () => {
+  it('deve rejeitar liberação sem justificativa', () => {
+    const carga = criarCargaEmInspecaoAprovada(criarDocumento());
+
+    const resultado = carga.liberarCarga('  ', 'operador-1');
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(
+        JustificativaLiberacaoObrigatoriaError,
+      );
+    }
+  });
+
+  it('deve impedir liberação de carga bloqueada [RN-CRQ-10]', () => {
+    const carga = criarCargaEmInspecaoAprovada(criarDocumento());
+    getOrThrow(carga.bloquearCarga('Interdição preventiva', 'gestor-1'));
+
+    const resultado = carga.liberarCarga('Tentativa de liberação', 'gestor-1');
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(CargaBloqueadaError);
+    }
+    expect(carga.status).toBe(StatusCarga.BLOQUEADA);
+  });
+
+  it('deve impedir movimentação de carga bloqueada [RN-CRQ-10]', () => {
     const carga = criarCarga();
-    carga.changeStatus(
-      StatusCarga.CANCELADA,
+    getOrThrow(carga.bloquearCarga('Interdição preventiva', 'gestor-1'));
+
+    const resultado = carga.changeStatus(
+      StatusCarga.EM_MOVIMENTACAO,
       'operador-1',
-      'Cancelamento solicitado.',
+      'Início do transporte.',
     );
 
-    expect(() =>
-      carga.anexarDocumento(
-        new DocumentoCarga({
-          id: 'doc-3',
-          tipoDocumento: 'FDS',
-          numeroReferencia: 'REF-003',
-          urlArquivo: 'https://example.com/fds-3.pdf',
-          dataEmissao: new Date('2025-01-01'),
-          dataValidade: new Date('2030-01-01'),
-          statusValidacao: StatusValidacao.VALIDADO,
-        }),
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(CargaBloqueadaError);
+    }
+    expect(carga.status).toBe(StatusCarga.BLOQUEADA);
+  });
+
+  it('deve permitir cancelar carga bloqueada', () => {
+    const carga = criarCarga();
+    getOrThrow(carga.bloquearCarga('Interdição preventiva', 'gestor-1'));
+
+    const resultado = carga.changeStatus(
+      StatusCarga.CANCELADA,
+      'gestor-1',
+      'Cancelamento definitivo.',
+    );
+
+    expect(resultado.kind).toBe('right');
+    expect(carga.status).toBe(StatusCarga.CANCELADA);
+  });
+
+  it('deve impedir anexar documento em carga cancelada [RN-CRQ-11]', () => {
+    const carga = criarCarga();
+    getOrThrow(
+      carga.changeStatus(
+        StatusCarga.CANCELADA,
+        'operador-1',
+        'Cancelamento solicitado.',
       ),
-    ).toThrow(/imutável/i);
+    );
+
+    const resultado = carga.anexarDocumento(criarDocumento({ id: 'doc-3' }));
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(CargaCanceladaError);
+    }
+    expect(carga.documentos).toHaveLength(0);
+  });
+
+  it('deve impedir qualquer transição a partir de carga cancelada [RN-CRQ-11]', () => {
+    const carga = criarCarga();
+    getOrThrow(
+      carga.changeStatus(
+        StatusCarga.CANCELADA,
+        'operador-1',
+        'Cancelamento solicitado.',
+      ),
+    );
+
+    const resultado = carga.changeStatus(
+      StatusCarga.LIBERADA,
+      'operador-1',
+      'Tentativa de liberação.',
+    );
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(CargaCanceladaError);
+    }
+    expect(carga.status).toBe(StatusCarga.CANCELADA);
   });
 
   it('deve rejeitar transição inválida de status', () => {
     const carga = criarCarga();
 
-    expect(() =>
-      carga.changeStatus(StatusCarga.FINALIZADA, 'operador-1', 'Finalização.'),
-    ).toThrow(/transição/i);
+    const resultado = carga.changeStatus(
+      StatusCarga.FINALIZADA,
+      'operador-1',
+      'Finalização.',
+    );
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(TransicaoStatusInvalidaError);
+      expect(resultado.error.message).toMatch(/transição/i);
+    }
+    expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
   });
 
   it('deve registrar data de criação e rejeitar transição sem auditoria', () => {
@@ -175,20 +339,31 @@ describe('CargaQuimicaAggregate', () => {
       motivo: 'Carga criada.',
     });
     expect(carga.historicoStatus[0].data).toEqual(carga.dataCriacao);
-    expect(() =>
-      carga.changeStatus(StatusCarga.CANCELADA, '', 'Cancelamento.'),
-    ).toThrow(/responsável/i);
+
+    const resultado = carga.changeStatus(
+      StatusCarga.CANCELADA,
+      '',
+      'Cancelamento.',
+    );
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(AuditoriaStatusInvalidaError);
+      expect(resultado.error.message).toMatch(/responsável/i);
+    }
     expect(carga.historicoStatus).toHaveLength(1);
     expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
   });
 
   it('deve restaurar o histórico sem duplicar o evento inicial', () => {
     const original = criarCarga();
-    original.changeStatus(
-      StatusCarga.CANCELADA,
-      'operador-1',
-      'Cancelamento solicitado.',
-      new Date('2026-01-02T00:00:00Z'),
+    getOrThrow(
+      original.changeStatus(
+        StatusCarga.CANCELADA,
+        'operador-1',
+        'Cancelamento solicitado.',
+        new Date('2026-01-02T00:00:00Z'),
+      ),
     );
 
     const restaurada = CargaQuimicaAggregate.restaurar(

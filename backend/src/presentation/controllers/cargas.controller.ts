@@ -6,6 +6,7 @@ import { BloquearCargaUseCase } from '../../application/use-cases/cargas/bloquea
 import { RealizarInspecaoUseCase } from '../../application/use-cases/inspecoes/realizar-inspecao.use-case.js';
 import { AnexarDocumentoUseCase } from '../../application/use-cases/cargas/anexar-documento.use-case.js';
 import * as cargaQuimicaDto from '../../application/dtos/carga-quimica.dto.js';
+import { toHttpException } from '../errors/domain-error-http.mapper.js';
 
 @Controller('cargas')
 export class CargasController {
@@ -22,7 +23,10 @@ export class CargasController {
   async registrar(
     @Body() body: cargaQuimicaDto.RegistrarCargaInputDto,
   ): Promise<cargaQuimicaDto.CargaQuimicaOutputDto> {
-    return this.registrarCargaUseCase.execute(body);
+    const resultado = await this.registrarCargaUseCase.execute(body);
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return resultado.value;
   }
 
   @Patch(':id/documentos/:documentoId/validar')
@@ -30,10 +34,12 @@ export class CargasController {
     @Param('id') cargaQuimicaId: string,
     @Param('documentoId') documentoId: string,
   ): Promise<{ mensagem: string }> {
-    await this.validarDocumentacaoUseCase.execute({
+    const resultado = await this.validarDocumentacaoUseCase.execute({
       cargaQuimicaId,
       documentoId,
     });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
     return { mensagem: 'Documento validado com sucesso.' };
   }
 
@@ -42,7 +48,13 @@ export class CargasController {
     @Param('id') cargaQuimicaId: string,
     @Body() body: Omit<cargaQuimicaDto.AnexarDocumentoInputDto, 'cargaQuimicaId'>,
   ): Promise<cargaQuimicaDto.DocumentoCargaOutputDto> {
-    return this.anexarDocumentoUseCase.execute({ ...body, cargaQuimicaId });
+    const resultado = await this.anexarDocumentoUseCase.execute({
+      ...body,
+      cargaQuimicaId,
+    });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return resultado.value;
   }
 
   @Post(':id/inspecoes')
@@ -51,7 +63,12 @@ export class CargasController {
     @Body()
     body: Omit<cargaQuimicaDto.RealizarInspecaoInputDto, 'cargaQuimicaId'>,
   ): Promise<{ mensagem: string }> {
-    await this.realizarInspecaoUseCase.execute({ ...body, cargaQuimicaId });
+    const resultado = await this.realizarInspecaoUseCase.execute({
+      ...body,
+      cargaQuimicaId,
+    });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
     return { mensagem: 'Inspeção registrada com sucesso.' };
   }
 
@@ -60,7 +77,12 @@ export class CargasController {
     @Param('id') cargaQuimicaId: string,
     @Body() body: Omit<cargaQuimicaDto.LiberarCargaInputDto, 'cargaQuimicaId'>,
   ): Promise<{ mensagem: string }> {
-    await this.liberarCargaUseCase.execute({ ...body, cargaQuimicaId });
+    const resultado = await this.liberarCargaUseCase.execute({
+      ...body,
+      cargaQuimicaId,
+    });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
     return { mensagem: 'Carga liberada com sucesso.' };
   }
 
@@ -69,7 +91,12 @@ export class CargasController {
     @Param('id') cargaQuimicaId: string,
     @Body() body: Omit<cargaQuimicaDto.BloquearCargaInputDto, 'cargaQuimicaId'>,
   ): Promise<{ mensagem: string }> {
-    await this.bloquearCargaUseCase.execute({ ...body, cargaQuimicaId });
+    const resultado = await this.bloquearCargaUseCase.execute({
+      ...body,
+      cargaQuimicaId,
+    });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
     return { mensagem: 'Carga bloqueada com sucesso.' };
   }
 }

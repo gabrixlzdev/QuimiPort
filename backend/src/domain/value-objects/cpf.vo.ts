@@ -1,14 +1,21 @@
+import { Either, left, right } from '../../shared/either.js';
+import { CPFInvalidoError } from '../errors/responsavel-tecnico.errors.js';
+
 export class Cpf {
   public readonly valor: string;
 
-  constructor(valor: string) {
+  private constructor(digitos: string) {
+    this.valor = digitos;
+  }
+
+  static create(valor: string): Either<CPFInvalidoError, Cpf> {
     const digitos = (valor ?? '').replace(/\D/g, '');
 
     if (!Cpf.temEstruturaValida(digitos) || !Cpf.temDigitosVerificadoresValidos(digitos)) {
-      throw new Error('CPF inválido.');
+      return left(new CPFInvalidoError());
     }
 
-    this.valor = digitos;
+    return right(new Cpf(digitos));
   }
 
   mascarado(): string {

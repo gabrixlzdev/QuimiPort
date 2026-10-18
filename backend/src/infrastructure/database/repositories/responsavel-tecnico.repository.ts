@@ -5,6 +5,7 @@ import { Cpf } from '../../../domain/value-objects/cpf.vo.js';
 import { RegistroProfissional } from '../../../domain/value-objects/registro-profissional.vo.js';
 import { ResponsavelTecnico } from '../../../domain/entities/responsavel-tecnico.entity.js';
 import { ResponsavelTecnicoRepository } from '../../../domain/repositories/responsavel-tecnico.repository.interface.js';
+import { getOrThrow } from '../../../shared/either.js';
 import { ResponsavelTecnicoOrmEntity } from '../entities/responsavel-tecnico.orm-entity.js';
 
 @Injectable()
@@ -33,16 +34,20 @@ export class TypeOrmResponsavelTecnicoRepository implements ResponsavelTecnicoRe
   }
 
   private toDomain(entity: ResponsavelTecnicoOrmEntity): ResponsavelTecnico {
-    return new ResponsavelTecnico({
-      id: entity.id,
-      nome: entity.nome,
-      cpf: new Cpf(entity.cpf),
-      registroProfissional: new RegistroProfissional(
-        entity.registroProfissional,
-        entity.ufConselho,
-      ),
-      emailContato: entity.emailContato ?? undefined,
-    });
+    return getOrThrow(
+      ResponsavelTecnico.create({
+        id: entity.id,
+        nome: entity.nome,
+        cpf: getOrThrow(Cpf.create(entity.cpf)),
+        registroProfissional: getOrThrow(
+          RegistroProfissional.create(
+            entity.registroProfissional,
+            entity.ufConselho,
+          ),
+        ),
+        emailContato: entity.emailContato ?? undefined,
+      }),
+    );
   }
 }
 

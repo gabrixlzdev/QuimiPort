@@ -1,3 +1,6 @@
+import { Either, left, right } from '../../shared/either.js';
+import { RegistroProfissionalInvalidoError } from '../errors/responsavel-tecnico.errors.js';
+
 export class RegistroProfissional {
   public readonly valor: string;
 
@@ -6,16 +9,20 @@ export class RegistroProfissional {
 
   public readonly ufConselho: string;
 
-  constructor(registro: string, ufConselho: string) {
+  private constructor(registro: string, ufConselho: string) {
+    this.valor = registro;
+    this.ufConselho = ufConselho.toUpperCase();
+  }
+
+  static create(registro: string, ufConselho: string): Either<RegistroProfissionalInvalidoError, RegistroProfissional> {
     if (!registro || !RegistroProfissional.registroRegex.test(registro)) {
-      throw new Error('Registro profissional inválido. Use CRQ/CREA com 3 a 7 dígitos.');
+      return left(new RegistroProfissionalInvalidoError('Registro profissional inválido. Use CRQ/CREA com 3 a 7 dígitos.'));
     }
 
     if (!RegistroProfissional.ufRegex.test(ufConselho)) {
-      throw new Error('UF do conselho inválida.');
+      return left(new RegistroProfissionalInvalidoError('UF do conselho inválida.'));
     }
 
-    this.valor = registro;
-    this.ufConselho = ufConselho.toUpperCase();
+    return right(new RegistroProfissional(registro, ufConselho));
   }
 }
