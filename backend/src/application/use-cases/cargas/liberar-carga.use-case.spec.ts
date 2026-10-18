@@ -60,6 +60,6 @@ describe('LiberarCargaUseCase', () => {
       expect(resultado.error).toBeInstanceOf(DocumentoObrigatorioAusenteError);
     }
     expect(salvar).not.toHaveBeenCalled();
-    expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
+    expect(carga.status).toBe(StatusCarga.REGISTRADA);
   });
 });

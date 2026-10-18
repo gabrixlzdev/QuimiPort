@@ -15,10 +15,12 @@ import {
   DocumentoPendenteError,
   DocumentoRejeitadoError,
   DocumentoVencidoError,
+  InspecaoForaDeEtapaError,
   InspecaoNaoAprovadaError,
   JustificativaLiberacaoObrigatoriaError,
   TransicaoStatusInvalidaError,
 } from '../../errors/carga-quimica.errors.js';
+import { RegraNegocioError } from '../../errors/domain.error.js';
 import {
   DocumentoCarga,
   DocumentoCargaProps,
@@ -81,6 +83,101 @@ describe('CargaQuimicaAggregate', () => {
     return carga;
   };
 
+  const caminhoAte: Record<StatusCarga, StatusCarga[]> = {
+    [StatusCarga.REGISTRADA]: [],
+    [StatusCarga.EM_ANALISE]: [StatusCarga.EM_ANALISE],
+    [StatusCarga.EM_INSPECAO]: [
+      StatusCarga.EM_ANALISE,
+      StatusCarga.EM_INSPECAO,
+    ],
+    [StatusCarga.LIBERADA]: [
+      StatusCarga.EM_ANALISE,
+      StatusCarga.EM_INSPECAO,
+      StatusCarga.LIBERADA,
+    ],
+    [StatusCarga.BLOQUEADA]: [
+      StatusCarga.EM_ANALISE,
+      StatusCarga.EM_INSPECAO,
+      StatusCarga.BLOQUEADA,
+    ],
+    [StatusCarga.EM_MOVIMENTACAO]: [
+      StatusCarga.EM_ANALISE,
+      StatusCarga.EM_INSPECAO,
+      StatusCarga.LIBERADA,
+      StatusCarga.EM_MOVIMENTACAO,
+    ],
+    [StatusCarga.FINALIZADA]: [
+      StatusCarga.EM_ANALISE,
+      StatusCarga.EM_INSPECAO,
+      StatusCarga.LIBERADA,
+      StatusCarga.EM_MOVIMENTACAO,
+      StatusCarga.FINALIZADA,
+    ],
+    [StatusCarga.CANCELADA]: [StatusCarga.CANCELADA],
+  };
+
+  const criarCargaNoStatus = (status: StatusCarga) => {
+    const carga = criarCarga();
+    for (const proximo of caminhoAte[status]) {
+      getOrThrow(carga.changeStatus(proximo, 'operador-1', 'Preparação.'));
+    }
+    return carga;
+  };
+
+  describe('máquina de estados [Fase 2]', () => {
+    it.each([
+      [StatusCarga.REGISTRADA, StatusCarga.EM_ANALISE],
+      [StatusCarga.EM_ANALISE, StatusCarga.EM_INSPECAO],
+      [StatusCarga.EM_INSPECAO, StatusCarga.LIBERADA],
+      [StatusCarga.LIBERADA, StatusCarga.EM_MOVIMENTACAO],
+      [StatusCarga.EM_MOVIMENTACAO, StatusCarga.FINALIZADA],
+      [StatusCarga.REGISTRADA, StatusCarga.CANCELADA],
+      [StatusCarga.EM_ANALISE, StatusCarga.CANCELADA],
+      [StatusCarga.EM_INSPECAO, StatusCarga.BLOQUEADA],
+      [StatusCarga.EM_INSPECAO, StatusCarga.CANCELADA],
+      [StatusCarga.LIBERADA, StatusCarga.CANCELADA],
+      [StatusCarga.BLOQUEADA, StatusCarga.CANCELADA],
+    ])('permite a transição %s -> %s', (origem, destino) => {
+      const carga = criarCargaNoStatus(origem);
+
+      const resultado = carga.changeStatus(destino, 'operador-1', 'Transição.');
+
+      expect(resultado.kind).toBe('right');
+      expect(carga.status).toBe(destino);
+      expect(carga.historicoStatus.at(-1)).toMatchObject({
+        statusAnterior: origem,
+        statusNovo: destino,
+      });
+    });
+
+    it.each([
+      [StatusCarga.CANCELADA, StatusCarga.LIBERADA],
+      [StatusCarga.FINALIZADA, StatusCarga.EM_MOVIMENTACAO],
+      [StatusCarga.BLOQUEADA, StatusCarga.EM_MOVIMENTACAO],
+      [StatusCarga.REGISTRADA, StatusCarga.FINALIZADA],
+      [StatusCarga.EM_INSPECAO, StatusCarga.FINALIZADA],
+      [StatusCarga.LIBERADA, StatusCarga.REGISTRADA],
+      [StatusCarga.REGISTRADA, StatusCarga.EM_INSPECAO],
+      [StatusCarga.REGISTRADA, StatusCarga.BLOQUEADA],
+      [StatusCarga.EM_ANALISE, StatusCarga.BLOQUEADA],
+      [StatusCarga.LIBERADA, StatusCarga.BLOQUEADA],
+      [StatusCarga.EM_MOVIMENTACAO, StatusCarga.BLOQUEADA],
+      [StatusCarga.EM_MOVIMENTACAO, StatusCarga.CANCELADA],
+    ])('impede a transição %s -> %s', (origem, destino) => {
+      const carga = criarCargaNoStatus(origem);
+      const eventosAntes = carga.historicoStatus.length;
+
+      const resultado = carga.changeStatus(destino, 'operador-1', 'Transição.');
+
+      expect(resultado.kind).toBe('left');
+      if (resultado.kind === 'left') {
+        expect(resultado.error).toBeInstanceOf(RegraNegocioError);
+      }
+      expect(carga.status).toBe(origem);
+      expect(carga.historicoStatus).toHaveLength(eventosAntes);
+    });
+  });
+
   it('deve rejeitar criação sem dados obrigatórios', () => {
     const resultado = CargaQuimicaAggregate.create({
       ...propsCarga(),
@@ -91,6 +188,24 @@ describe('CargaQuimicaAggregate', () => {
     if (resultado.kind === 'left') {
       expect(resultado.error).toBeInstanceOf(CargaQuimicaInvalidaError);
     }
+  });
+
+  it('deve iniciar a análise ao anexar o primeiro documento', () => {
+    const carga = criarCarga();
+
+    getOrThrow(carga.anexarDocumento(criarDocumento()));
+    getOrThrow(carga.anexarDocumento(criarDocumento({ id: 'doc-2' })));
+
+    expect(carga.status).toBe(StatusCarga.EM_ANALISE);
+    expect(carga.documentos).toHaveLength(2);
+    expect(carga.historicoStatus.map((evento) => evento.statusNovo)).toEqual([
+      StatusCarga.REGISTRADA,
+      StatusCarga.EM_ANALISE,
+    ]);
+    expect(carga.historicoStatus[1]).toMatchObject({
+      responsavelId: 'responsavel-1',
+      motivo: 'Documento FDS anexado para análise.',
+    });
   });
 
   it('deve liberar carga com documentação válida e inspeção aprovada', () => {
@@ -104,15 +219,16 @@ describe('CargaQuimicaAggregate', () => {
     expect(resultado.kind).toBe('right');
     expect(carga.status).toBe(StatusCarga.LIBERADA);
     expect(carga.historicoStatus.map((evento) => evento.statusNovo)).toEqual([
-      StatusCarga.AGUARDANDO_DOCUMENTACAO,
+      StatusCarga.REGISTRADA,
+      StatusCarga.EM_ANALISE,
       StatusCarga.EM_INSPECAO,
       StatusCarga.LIBERADA,
     ]);
-    expect(carga.historicoStatus[1]).toMatchObject({
-      responsavelId: 'inspetor-1',
-      motivo: 'Tudo conforme',
-    });
     expect(carga.historicoStatus[2]).toMatchObject({
+      responsavelId: 'inspetor-1',
+      motivo: 'Inspeção iniciada.',
+    });
+    expect(carga.historicoStatus[3]).toMatchObject({
       responsavelId: 'operador-1',
       motivo: 'Liberado após validação',
     });
@@ -120,6 +236,7 @@ describe('CargaQuimicaAggregate', () => {
 
   it('deve bloquear carga quando a inspeção é reprovada', () => {
     const carga = criarCarga();
+    getOrThrow(carga.anexarDocumento(criarDocumento()));
 
     const resultado = carga.registrarInspecao(
       criarInspecao({
@@ -132,16 +249,28 @@ describe('CargaQuimicaAggregate', () => {
     expect(resultado.kind).toBe('right');
     expect(carga.status).toBe(StatusCarga.BLOQUEADA);
     expect(carga.historicoStatus.at(-1)).toMatchObject({
-      statusAnterior: StatusCarga.AGUARDANDO_DOCUMENTACAO,
+      statusAnterior: StatusCarga.EM_INSPECAO,
       statusNovo: StatusCarga.BLOQUEADA,
       responsavelId: 'inspetor-1',
       motivo: 'Embalagem danificada',
     });
   });
 
+  it('deve impedir inspeção de carga ainda sem documentação', () => {
+    const carga = criarCarga();
+
+    const resultado = carga.registrarInspecao(criarInspecao());
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(InspecaoForaDeEtapaError);
+    }
+    expect(carga.status).toBe(StatusCarga.REGISTRADA);
+    expect(carga.inspecoes).toHaveLength(0);
+  });
+
   it('deve rejeitar tentativa de liberar sem documentação anexada', () => {
     const carga = criarCarga();
-    getOrThrow(carga.registrarInspecao(criarInspecao()));
 
     const resultado = carga.liberarCarga('Sem documentação', 'operador-1');
 
@@ -149,7 +278,7 @@ describe('CargaQuimicaAggregate', () => {
     if (resultado.kind === 'left') {
       expect(resultado.error).toBeInstanceOf(DocumentoObrigatorioAusenteError);
     }
-    expect(carga.status).toBe(StatusCarga.EM_INSPECAO);
+    expect(carga.status).toBe(StatusCarga.REGISTRADA);
   });
 
   it('deve rejeitar tentativa de liberar com documento pendente de validação', () => {
@@ -209,7 +338,7 @@ describe('CargaQuimicaAggregate', () => {
     if (resultado.kind === 'left') {
       expect(resultado.error).toBeInstanceOf(InspecaoNaoAprovadaError);
     }
-    expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
+    expect(carga.status).toBe(StatusCarga.EM_ANALISE);
   });
 
   it('deve rejeitar liberação sem justificativa', () => {
@@ -239,7 +368,7 @@ describe('CargaQuimicaAggregate', () => {
   });
 
   it('deve impedir movimentação de carga bloqueada [RN-CRQ-10]', () => {
-    const carga = criarCarga();
+    const carga = criarCargaEmInspecaoAprovada(criarDocumento());
     getOrThrow(carga.bloquearCarga('Interdição preventiva', 'gestor-1'));
 
     const resultado = carga.changeStatus(
@@ -255,8 +384,20 @@ describe('CargaQuimicaAggregate', () => {
     expect(carga.status).toBe(StatusCarga.BLOQUEADA);
   });
 
-  it('deve permitir cancelar carga bloqueada', () => {
+  it('deve impedir bloqueio fora da etapa de inspeção', () => {
     const carga = criarCarga();
+
+    const resultado = carga.bloquearCarga('Bloqueio preventivo', 'gestor-1');
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(TransicaoStatusInvalidaError);
+    }
+    expect(carga.status).toBe(StatusCarga.REGISTRADA);
+  });
+
+  it('deve permitir cancelar carga bloqueada', () => {
+    const carga = criarCargaEmInspecaoAprovada(criarDocumento());
     getOrThrow(carga.bloquearCarga('Interdição preventiva', 'gestor-1'));
 
     const resultado = carga.changeStatus(
@@ -325,7 +466,7 @@ describe('CargaQuimicaAggregate', () => {
       expect(resultado.error).toBeInstanceOf(TransicaoStatusInvalidaError);
       expect(resultado.error.message).toMatch(/transição/i);
     }
-    expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
+    expect(carga.status).toBe(StatusCarga.REGISTRADA);
   });
 
   it('deve registrar data de criação e rejeitar transição sem auditoria', () => {
@@ -334,7 +475,7 @@ describe('CargaQuimicaAggregate', () => {
     expect(carga.dataCriacao).toEqual(new Date('2025-12-31T23:00:00Z'));
     expect(carga.historicoStatus[0]).toMatchObject({
       statusAnterior: null,
-      statusNovo: StatusCarga.AGUARDANDO_DOCUMENTACAO,
+      statusNovo: StatusCarga.REGISTRADA,
       responsavelId: 'responsavel-1',
       motivo: 'Carga criada.',
     });
@@ -352,7 +493,7 @@ describe('CargaQuimicaAggregate', () => {
       expect(resultado.error.message).toMatch(/responsável/i);
     }
     expect(carga.historicoStatus).toHaveLength(1);
-    expect(carga.status).toBe(StatusCarga.AGUARDANDO_DOCUMENTACAO);
+    expect(carga.status).toBe(StatusCarga.REGISTRADA);
   });
 
   it('deve restaurar o histórico sem duplicar o evento inicial', () => {

@@ -14,6 +14,7 @@ import {
   DocumentoPendenteError,
   DocumentoRejeitadoError,
   DocumentoVencidoError,
+  InspecaoForaDeEtapaError,
   InspecaoNaoAprovadaError,
   JustificativaLiberacaoObrigatoriaError,
   MotivoBloqueioObrigatorioError,
@@ -69,7 +70,10 @@ export type LiberacaoCargaError =
 export type BloqueioCargaError =
   MotivoBloqueioObrigatorioError | AlteracaoStatusError;
 
-export type RegistroInspecaoError = AlteracaoStatusError;
+export type AnexoDocumentoError = AlteracaoStatusError;
+
+export type RegistroInspecaoError =
+  InspecaoForaDeEtapaError | AlteracaoStatusError;
 
 export class CargaQuimicaAggregate {
   public readonly id: string;
@@ -110,7 +114,7 @@ export class CargaQuimicaAggregate {
     this.dataEntrada = props.dataEntrada;
     this.dataCriacao = props.dataCriacao ?? new Date();
     this.grupoCompatibilidade = props.grupoCompatibilidade;
-    this.statusAtual = props.status ?? StatusCarga.AGUARDANDO_DOCUMENTACAO;
+    this.statusAtual = props.status ?? StatusCarga.REGISTRADA;
     this.eventosStatus.push({
       statusAnterior: null,
       statusNovo: this.statusAtual,
@@ -124,34 +128,20 @@ export class CargaQuimicaAggregate {
     StatusCarga,
     StatusCarga[]
   > = {
-    [StatusCarga.AGUARDANDO_DOCUMENTACAO]: [
-      StatusCarga.DOCUMENTACAO_VALIDADA,
-      StatusCarga.EM_INSPECAO,
-      StatusCarga.CANCELADA,
-      StatusCarga.BLOQUEADA,
-    ],
-    [StatusCarga.DOCUMENTACAO_VALIDADA]: [
-      StatusCarga.EM_INSPECAO,
-      StatusCarga.CANCELADA,
-      StatusCarga.BLOQUEADA,
-    ],
+    [StatusCarga.REGISTRADA]: [StatusCarga.EM_ANALISE, StatusCarga.CANCELADA],
+    [StatusCarga.EM_ANALISE]: [StatusCarga.EM_INSPECAO, StatusCarga.CANCELADA],
     [StatusCarga.EM_INSPECAO]: [
       StatusCarga.LIBERADA,
-      StatusCarga.CANCELADA,
       StatusCarga.BLOQUEADA,
+      StatusCarga.CANCELADA,
     ],
     [StatusCarga.LIBERADA]: [
       StatusCarga.EM_MOVIMENTACAO,
       StatusCarga.CANCELADA,
-      StatusCarga.BLOQUEADA,
     ],
-    [StatusCarga.EM_MOVIMENTACAO]: [
-      StatusCarga.FINALIZADA,
-      StatusCarga.CANCELADA,
-      StatusCarga.BLOQUEADA,
-    ],
-    [StatusCarga.FINALIZADA]: [],
     [StatusCarga.BLOQUEADA]: [StatusCarga.CANCELADA],
+    [StatusCarga.EM_MOVIMENTACAO]: [StatusCarga.FINALIZADA],
+    [StatusCarga.FINALIZADA]: [],
     [StatusCarga.CANCELADA]: [],
   };
 
@@ -303,9 +293,20 @@ export class CargaQuimicaAggregate {
     return right(undefined);
   }
 
-  anexarDocumento(documento: DocumentoCarga): Either<CargaImutavelError, void> {
+  anexarDocumento(
+    documento: DocumentoCarga,
+  ): Either<AnexoDocumentoError, void> {
     const imutavel = this.verificarImutabilidade();
     if (imutavel.kind === 'left') return imutavel;
+
+    if (this.status === StatusCarga.REGISTRADA) {
+      const inicioAnalise = this.changeStatus(
+        StatusCarga.EM_ANALISE,
+        this.responsavelTecnicoId,
+        `Documento ${documento.tipoDocumento} anexado para análise.`,
+      );
+      if (inicioAnalise.kind === 'left') return inicioAnalise;
+    }
 
     this.documentos.push(documento);
     return right(undefined);
@@ -315,6 +316,27 @@ export class CargaQuimicaAggregate {
     const imutavel = this.verificarImutabilidade();
     if (imutavel.kind === 'left') return imutavel;
 
+    if (this.status === StatusCarga.BLOQUEADA) {
+      return left(new CargaBloqueadaError());
+    }
+
+    if (
+      this.status !== StatusCarga.EM_ANALISE &&
+      this.status !== StatusCarga.EM_INSPECAO
+    ) {
+      return left(new InspecaoForaDeEtapaError(this.status));
+    }
+
+    if (this.status === StatusCarga.EM_ANALISE) {
+      const inicioInspecao = this.changeStatus(
+        StatusCarga.EM_INSPECAO,
+        inspecao.inspetorId,
+        'Inspeção iniciada.',
+        inspecao.dataRealizacao,
+      );
+      if (inicioInspecao.kind === 'left') return inicioInspecao;
+    }
+
     if (inspecao.resultado === ResultadoInspecao.REPROVADO) {
       const bloqueio = this.changeStatus(
         StatusCarga.BLOQUEADA,
@@ -323,17 +345,6 @@ export class CargaQuimicaAggregate {
         inspecao.dataRealizacao,
       );
       if (bloqueio.kind === 'left') return bloqueio;
-    } else if (
-      this.status === StatusCarga.AGUARDANDO_DOCUMENTACAO ||
-      this.status === StatusCarga.DOCUMENTACAO_VALIDADA
-    ) {
-      const inicioInspecao = this.changeStatus(
-        StatusCarga.EM_INSPECAO,
-        inspecao.inspetorId,
-        inspecao.observacoes || 'Inspeção realizada.',
-        inspecao.dataRealizacao,
-      );
-      if (inicioInspecao.kind === 'left') return inicioInspecao;
     }
 
     this.inspecoes.push(inspecao);

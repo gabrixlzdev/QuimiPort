@@ -229,13 +229,13 @@ Diagrama de estados (Mermaid):
 
 ```mermaid
 stateDiagram-v2
-    [*] --> AGUARDANDO_DOCUMENTACAO: Registro da Carga
+    [*] --> REGISTRADA: Registro da Carga
 
-    AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
-    AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
+    REGISTRADA --> EM_ANALISE: Anexo de Documentação
+    REGISTRADA --> CANCELADA: Cancelamento
 
-    DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
-    DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
+    EM_ANALISE --> EM_INSPECAO: Solicitação de Inspeção
+    EM_ANALISE --> CANCELADA: Cancelamento
 
     EM_INSPECAO --> LIBERADA: Parecer Favorável
     EM_INSPECAO --> CANCELADA: Cancelamento
@@ -260,7 +260,7 @@ Observação: qualquer transição fora desses 11 caminhos deve ser rejeitada pe
 
 Enum oficial do sistema QuimiPort:
 
-- StatusCarga = { AGUARDANDO_DOCUMENTACAO, DOCUMENTACAO_VALIDADA, EM_INSPECAO, LIBERADA, EM_MOVIMENTACAO, FINALIZADA, BLOQUEADA, CANCELADA }
+- StatusCarga = { REGISTRADA, EM_ANALISE, EM_INSPECAO, LIBERADA, EM_MOVIMENTACAO, FINALIZADA, BLOQUEADA, CANCELADA }
 - StatusValidacao = { PENDENTE, VALIDADO, REJEITADO }
 - ResultadoInspecao = { PENDENTE, APROVADO, REPROVADO }
 - UnidadeMedida = { TONELADAS, QUILOGRAMAS, LITROS, METROS_CUBICOS }
@@ -279,8 +279,8 @@ Arquivo de enums (exemplo):
 ```typescript
 // name: src/domain/enums.ts
 export enum StatusCarga {
-  AGUARDANDO_DOCUMENTACAO = "AGUARDANDO_DOCUMENTACAO",
-  DOCUMENTACAO_VALIDADA = "DOCUMENTACAO_VALIDADA",
+  REGISTRADA = "REGISTRADA",
+  EM_ANALISE = "EM_ANALISE",
   EM_INSPECAO = "EM_INSPECAO",
   LIBERADA = "LIBERADA",
   EM_MOVIMENTACAO = "EM_MOVIMENTACAO",

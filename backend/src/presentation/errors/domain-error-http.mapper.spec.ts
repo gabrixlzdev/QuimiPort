@@ -26,7 +26,7 @@ describe('DomainErrorHttpMapper', () => {
   it('converte o erro de domínio em resposta sem expor detalhes internos', () => {
     const excecao = toHttpException(
       new TransicaoStatusInvalidaError(
-        StatusCarga.AGUARDANDO_DOCUMENTACAO,
+        StatusCarga.REGISTRADA,
         StatusCarga.FINALIZADA,
       ),
     );
@@ -35,8 +35,7 @@ describe('DomainErrorHttpMapper', () => {
     expect(excecao.getResponse()).toEqual({
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
       erro: 'TransicaoStatusInvalidaError',
-      mensagem:
-        'Transição de status inválida: AGUARDANDO_DOCUMENTACAO -> FINALIZADA.',
+      mensagem: 'Transição de status inválida: REGISTRADA -> FINALIZADA.',
     });
   });
 });

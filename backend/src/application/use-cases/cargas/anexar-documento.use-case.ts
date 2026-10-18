@@ -1,4 +1,4 @@
-import { CargaImutavelError } from '../../../domain/aggregate/carga-quimica/carga-quimica.aggregate.js';
+import { AnexoDocumentoError } from '../../../domain/aggregate/carga-quimica/carga-quimica.aggregate.js';
 import { DocumentoCarga } from '../../../domain/aggregate/carga-quimica/documento-carga.entity.js';
 import {
   CargaNaoEncontradaError,
@@ -13,7 +13,7 @@ import {
 } from '../../dtos/carga-quimica.dto.js';
 
 export type AnexarDocumentoError =
-  CargaNaoEncontradaError | DocumentoCargaInvalidoError | CargaImutavelError;
+  CargaNaoEncontradaError | DocumentoCargaInvalidoError | AnexoDocumentoError;
 
 export class AnexarDocumentoUseCase {
   constructor(private readonly cargaRepository: CargaQuimicaRepository) {}

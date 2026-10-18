@@ -192,13 +192,13 @@ flowchart LR
 
 ```mermaid
 stateDiagram-v2
-    [*] --> AGUARDANDO_DOCUMENTACAO: Registro da Carga
+    [*] --> REGISTRADA: Registro da Carga
 
-    AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
-    AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
+    REGISTRADA --> EM_ANALISE: Anexo de Documentação
+    REGISTRADA --> CANCELADA: Cancelamento
 
-    DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
-    DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
+    EM_ANALISE --> EM_INSPECAO: Solicitação de Inspeção
+    EM_ANALISE --> CANCELADA: Cancelamento
 
     EM_INSPECAO --> LIBERADA: Parecer Favorável
     EM_INSPECAO --> CANCELADA: Cancelamento
@@ -219,10 +219,10 @@ stateDiagram-v2
 
 | Status Atual | Ação / Evento Trigger | Próximo Status | Invariantes e Regras de Validação Exigidas |
 | :----------- | :-------------------- | :------------- | :----------------------------------------- |
-| **`AGUARDANDO_DOCUMENTACAO`** | `ValidarDocumentos` | `DOCUMENTACAO_VALIDADA` | Documentação obrigatória e dados do registro devem estar consistentes para avançar. |
-| **`AGUARDANDO_DOCUMENTACAO`** | `CancelarCarga` | `CANCELADA` | Cancelamento permitido enquanto a carga ainda não finalizou etapa operacional. |
-| **`DOCUMENTACAO_VALIDADA`** | `SolicitarInspecao` | `EM_INSPECAO` | A carga deve ter documentação válida e sem pendências antes da inspeção. |
-| **`DOCUMENTACAO_VALIDADA`** | `CancelarCarga` | `CANCELADA` | Cancelamento válido quando a operação é abortada após validação documental. |
+| **`REGISTRADA`** | `AnexarDocumento` | `EM_ANALISE` | O primeiro documento anexado inicia a análise documental da carga (UC-004). |
+| **`REGISTRADA`** | `CancelarCarga` | `CANCELADA` | Cancelamento permitido enquanto a carga ainda não finalizou etapa operacional. |
+| **`EM_ANALISE`** | `RealizarInspecao` | `EM_INSPECAO` | A inspeção só é registrada em carga com documentação anexada; a validade dos documentos é exigida na liberação (RN-CRQ-09). |
+| **`EM_ANALISE`** | `CancelarCarga` | `CANCELADA` | Cancelamento válido quando a operação é abortada durante a análise documental. |
 | **`EM_INSPECAO`** | `LiberarCarga` | `LIBERADA` | Parecer de inspeção favorável e condições operacionais atendidas. |
 | **`EM_INSPECAO`** | `CancelarCarga` | `CANCELADA` | Cancelamento permitido quando a carga deixa de ser viável após inspeção. |
 | **`EM_INSPECAO`** | `BloquearCarga` | `BLOQUEADA` | Irregularidade técnica ou operacional provoca bloqueio imediato. **Único ponto de entrada para `BLOQUEADA`**, conforme o enunciado da Fase 2. |

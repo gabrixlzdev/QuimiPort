@@ -81,7 +81,7 @@ O escopo atual contempla o desenho arquitetural, a modelagem de domínio com Dom
 | **Inspeção**              | Procedimento de vistoria física e verificação preventiva realizado na carga para checar lacres, vazamentos, rotulagem e conformidade da embalagem.                                                                                                                |
 | **Liberação**             | Ação formal que altera o estado da Carga Química para autorizar sua movimentação física ou desembarque do terminal.                                                                                                                                               |
 | **Bloqueio**              | Ação preventiva ou corretiva que impede qualquer movimentação física ou transição operacional da Carga Química devido a irregularidades ou emergências.                                                                                                           |
-| **Status da Carga**       | A etapa exata do ciclo de vida em que a Carga Química se encontra, seguindo a máquina de estados oficial do QuimiPort: `AGUARDANDO_DOCUMENTACAO`, `DOCUMENTACAO_VALIDADA`, `EM_INSPECAO`, `LIBERADA`, `EM_MOVIMENTACAO`, `FINALIZADA`, `BLOQUEADA` e `CANCELADA`. |
+| **Status da Carga**       | A etapa exata do ciclo de vida em que a Carga Química se encontra, seguindo a máquina de estados oficial do QuimiPort: `REGISTRADA`, `EM_ANALISE`, `EM_INSPECAO`, `LIBERADA`, `EM_MOVIMENTACAO`, `FINALIZADA`, `BLOQUEADA` e `CANCELADA`. |
 | **Invariante**            | Uma regra de negócio estrita e imutável que deve ser mantida verdadeira durante todo o tempo de vida de um Agregado do domínio.                                                                                                                                   |
 
 ---
@@ -92,8 +92,8 @@ A máquina de estados da Carga Química no QuimiPort é fechada e exclusiva: ape
 
 ### Status oficiais
 
-1. `AGUARDANDO_DOCUMENTACAO` — status inicial do registro da carga.
-2. `DOCUMENTACAO_VALIDADA` — documentação obrigatória validada pelo sistema e pela operação.
+1. `REGISTRADA` — status inicial do registro da carga, aguardando documentação.
+2. `EM_ANALISE` — documentação anexada à carga e em análise pela operação.
 3. `EM_INSPECAO` — carga em vistoria técnica/operacional.
 4. `LIBERADA` — carga autorizada para movimentação.
 5. `EM_MOVIMENTACAO` — carga em trânsito, descarregamento ou movimentação ativa.
@@ -111,13 +111,13 @@ A máquina de estados da Carga Química no QuimiPort é fechada e exclusiva: ape
 
 ```mermaid
 stateDiagram-v2
-    [*] --> AGUARDANDO_DOCUMENTACAO: Registro da Carga
+    [*] --> REGISTRADA: Registro da Carga
 
-    AGUARDANDO_DOCUMENTACAO --> DOCUMENTACAO_VALIDADA: Validação de Documentos
-    AGUARDANDO_DOCUMENTACAO --> CANCELADA: Cancelamento
+    REGISTRADA --> EM_ANALISE: Anexo de Documentação
+    REGISTRADA --> CANCELADA: Cancelamento
 
-    DOCUMENTACAO_VALIDADA --> EM_INSPECAO: Solicitação de Inspeção
-    DOCUMENTACAO_VALIDADA --> CANCELADA: Cancelamento
+    EM_ANALISE --> EM_INSPECAO: Solicitação de Inspeção
+    EM_ANALISE --> CANCELADA: Cancelamento
 
     EM_INSPECAO --> LIBERADA: Parecer Favorável
     EM_INSPECAO --> CANCELADA: Cancelamento
