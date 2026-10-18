@@ -5,6 +5,7 @@ import { AreaArmazenamento } from '../../../domain/entities/area-armazenamento.e
 import { AreaArmazenamentoOrmEntity } from '../entities/area-armazenamento.orm-entity.js';
 import { CargaQuimicaOrmEntity } from '../entities/carga-quimica.orm-entity.js';
 import { TypeOrmAreaArmazenamentoRepository } from './typeorm-area-armazenamento.repository.js';
+import { getOrThrow } from '../../../shared/either.js';
 
 describe('TypeOrmAreaArmazenamentoRepository', () => {
   const criarOrmEntity = () =>
@@ -26,15 +27,17 @@ describe('TypeOrmAreaArmazenamentoRepository', () => {
       find: vi.fn(),
     } as unknown as Repository<AreaArmazenamentoOrmEntity>;
     const areaRepository = new TypeOrmAreaArmazenamentoRepository(repository);
-    const area = new AreaArmazenamento({
-      id: 'area-1',
-      nome: 'Pátio A',
-      codigo: 'PA-01',
-      tipo: 'PATIO',
-      cargaQuimicaId: 'carga-1',
-      capacidadeMaxima: 1000,
-      quantidadeOcupada: 1000,
-    });
+    const area = getOrThrow(
+      AreaArmazenamento.create({
+        id: 'area-1',
+        nome: 'Pátio A',
+        codigo: 'PA-01',
+        tipo: 'PATIO',
+        cargaQuimicaId: 'carga-1',
+        capacidadeMaxima: 1000,
+        quantidadeOcupada: 1000,
+      }),
+    );
 
     const salva = await areaRepository.salvar(area);
 

@@ -1,8 +1,25 @@
+import { Either, getOrThrow, left, right } from '../../../shared/either.js';
 import {
   StatusCarga,
   StatusValidacao,
   ResultadoInspecao,
 } from '../../enums.js';
+import {
+  AuditoriaStatusInvalidaError,
+  CargaBloqueadaError,
+  CargaCanceladaError,
+  CargaFinalizadaError,
+  CargaQuimicaInvalidaError,
+  DocumentoObrigatorioAusenteError,
+  DocumentoPendenteError,
+  DocumentoRejeitadoError,
+  DocumentoVencidoError,
+  InspecaoForaDeEtapaError,
+  InspecaoNaoAprovadaError,
+  JustificativaLiberacaoObrigatoriaError,
+  MotivoBloqueioObrigatorioError,
+  TransicaoStatusInvalidaError,
+} from '../../errors/carga-quimica.errors.js';
 import { Inspecao } from '../../entities/inspecao.entity.js';
 import { QuantidadeCarga } from '../../value-objects/quantidade-carga.vo.js';
 import { CodigoIdentificacao } from '../../value-objects/codigo-identificacao.vo.js';
@@ -29,6 +46,34 @@ export type HistoricoStatusCarga = {
   responsavelId: string;
   motivo: string;
 };
+
+export type CargaImutavelError = CargaCanceladaError | CargaFinalizadaError;
+
+export type AlteracaoStatusError =
+  | AuditoriaStatusInvalidaError
+  | CargaImutavelError
+  | CargaBloqueadaError
+  | TransicaoStatusInvalidaError;
+
+export type DocumentacaoLiberacaoError =
+  | DocumentoObrigatorioAusenteError
+  | DocumentoPendenteError
+  | DocumentoRejeitadoError
+  | DocumentoVencidoError;
+
+export type LiberacaoCargaError =
+  | JustificativaLiberacaoObrigatoriaError
+  | DocumentacaoLiberacaoError
+  | InspecaoNaoAprovadaError
+  | AlteracaoStatusError;
+
+export type BloqueioCargaError =
+  MotivoBloqueioObrigatorioError | AlteracaoStatusError;
+
+export type AnexoDocumentoError = AlteracaoStatusError;
+
+export type RegistroInspecaoError =
+  InspecaoForaDeEtapaError | AlteracaoStatusError;
 
 export class CargaQuimicaAggregate {
   public readonly id: string;
@@ -58,16 +103,7 @@ export class CargaQuimicaAggregate {
     }));
   }
 
-  constructor(props: CargaQuimicaAggregateProps) {
-    if (
-      !props.id ||
-      !props.codigoIdentificacao ||
-      !props.produtoQuimicoId ||
-      !props.responsavelTecnicoId
-    ) {
-      throw new Error('Carga química inválida: dados obrigatórios faltando.');
-    }
-
+  private constructor(props: CargaQuimicaAggregateProps) {
     this.id = props.id;
     this.codigoIdentificacao = props.codigoIdentificacao;
     this.produtoQuimicoId = props.produtoQuimicoId;
@@ -77,11 +113,8 @@ export class CargaQuimicaAggregate {
     this.destino = props.destino;
     this.dataEntrada = props.dataEntrada;
     this.dataCriacao = props.dataCriacao ?? new Date();
-    if (Number.isNaN(this.dataCriacao.getTime())) {
-      throw new Error('Data de criação da carga inválida.');
-    }
     this.grupoCompatibilidade = props.grupoCompatibilidade;
-    this.statusAtual = props.status ?? StatusCarga.AGUARDANDO_DOCUMENTACAO;
+    this.statusAtual = props.status ?? StatusCarga.REGISTRADA;
     this.eventosStatus.push({
       statusAnterior: null,
       statusNovo: this.statusAtual,
@@ -95,36 +128,47 @@ export class CargaQuimicaAggregate {
     StatusCarga,
     StatusCarga[]
   > = {
-    [StatusCarga.AGUARDANDO_DOCUMENTACAO]: [
-      StatusCarga.DOCUMENTACAO_VALIDADA,
-      StatusCarga.EM_INSPECAO,
-      StatusCarga.CANCELADA,
-      StatusCarga.BLOQUEADA,
-    ],
-    [StatusCarga.DOCUMENTACAO_VALIDADA]: [
-      StatusCarga.EM_INSPECAO,
-      StatusCarga.CANCELADA,
-      StatusCarga.BLOQUEADA,
-    ],
+    [StatusCarga.REGISTRADA]: [StatusCarga.EM_ANALISE, StatusCarga.CANCELADA],
+    [StatusCarga.EM_ANALISE]: [StatusCarga.EM_INSPECAO, StatusCarga.CANCELADA],
     [StatusCarga.EM_INSPECAO]: [
       StatusCarga.LIBERADA,
-      StatusCarga.CANCELADA,
       StatusCarga.BLOQUEADA,
+      StatusCarga.CANCELADA,
     ],
     [StatusCarga.LIBERADA]: [
       StatusCarga.EM_MOVIMENTACAO,
       StatusCarga.CANCELADA,
-      StatusCarga.BLOQUEADA,
     ],
-    [StatusCarga.EM_MOVIMENTACAO]: [
-      StatusCarga.FINALIZADA,
-      StatusCarga.CANCELADA,
-      StatusCarga.BLOQUEADA,
-    ],
-    [StatusCarga.FINALIZADA]: [],
     [StatusCarga.BLOQUEADA]: [StatusCarga.CANCELADA],
+    [StatusCarga.EM_MOVIMENTACAO]: [StatusCarga.FINALIZADA],
+    [StatusCarga.FINALIZADA]: [],
     [StatusCarga.CANCELADA]: [],
   };
+
+  static create(
+    props: CargaQuimicaAggregateProps,
+  ): Either<CargaQuimicaInvalidaError, CargaQuimicaAggregate> {
+    if (
+      !props.id ||
+      !props.codigoIdentificacao ||
+      !props.produtoQuimicoId ||
+      !props.responsavelTecnicoId
+    ) {
+      return left(
+        new CargaQuimicaInvalidaError(
+          'Carga química inválida: dados obrigatórios faltando.',
+        ),
+      );
+    }
+
+    if (props.dataCriacao && Number.isNaN(props.dataCriacao.getTime())) {
+      return left(
+        new CargaQuimicaInvalidaError('Data de criação da carga inválida.'),
+      );
+    }
+
+    return right(new CargaQuimicaAggregate(props));
+  }
 
   static restaurar(
     props: CargaQuimicaAggregateProps,
@@ -137,10 +181,12 @@ export class CargaQuimicaAggregate {
       );
     }
 
-    const carga = new CargaQuimicaAggregate({
-      ...props,
-      status: eventoInicial.statusNovo,
-    });
+    const carga = getOrThrow(
+      CargaQuimicaAggregate.create({
+        ...props,
+        status: eventoInicial.statusNovo,
+      }),
+    );
 
     for (let indice = 0; indice < historicoStatus.length; indice += 1) {
       const evento = historicoStatus[indice];
@@ -204,31 +250,36 @@ export class CargaQuimicaAggregate {
     responsavelId: string,
     motivo: string,
     data: Date = new Date(),
-  ): void {
+  ): Either<AlteracaoStatusError, void> {
     if (!responsavelId?.trim() || !motivo?.trim()) {
-      throw new Error(
-        'Responsável e motivo são obrigatórios para alterar o status.',
+      return left(
+        new AuditoriaStatusInvalidaError(
+          'Responsável e motivo são obrigatórios para alterar o status.',
+        ),
       );
     }
     if (!(data instanceof Date) || Number.isNaN(data.getTime())) {
-      throw new Error('Data da transição de status inválida.');
+      return left(
+        new AuditoriaStatusInvalidaError(
+          'Data da transição de status inválida.',
+        ),
+      );
     }
 
+    const imutavel = this.verificarImutabilidade();
+    if (imutavel.kind === 'left') return imutavel;
+
     if (
-      this.status === StatusCarga.FINALIZADA ||
-      this.status === StatusCarga.CANCELADA
+      this.status === StatusCarga.BLOQUEADA &&
+      novoStatus !== StatusCarga.CANCELADA
     ) {
-      throw new Error(
-        'Carga finalizada ou cancelada não pode sofrer novas transições.',
-      );
+      return left(new CargaBloqueadaError());
     }
 
     const transicoes =
       CargaQuimicaAggregate.transicoesPermitidas[this.status] ?? [];
     if (!transicoes.includes(novoStatus)) {
-      throw new Error(
-        `Transição de status inválida: ${this.status} -> ${novoStatus}.`,
-      );
+      return left(new TransicaoStatusInvalidaError(this.status, novoStatus));
     }
 
     this.eventosStatus.push({
@@ -239,97 +290,142 @@ export class CargaQuimicaAggregate {
       motivo: motivo.trim(),
     });
     this.statusAtual = novoStatus;
+    return right(undefined);
   }
 
-  anexarDocumento(documento: DocumentoCarga): void {
-    if (
-      this.status === StatusCarga.CANCELADA ||
-      this.status === StatusCarga.FINALIZADA
-    ) {
-      throw new Error('Carga imutável em estado CANCELADA ou FINALIZADA.');
+  anexarDocumento(
+    documento: DocumentoCarga,
+  ): Either<AnexoDocumentoError, void> {
+    const imutavel = this.verificarImutabilidade();
+    if (imutavel.kind === 'left') return imutavel;
+
+    if (this.status === StatusCarga.REGISTRADA) {
+      const inicioAnalise = this.changeStatus(
+        StatusCarga.EM_ANALISE,
+        this.responsavelTecnicoId,
+        `Documento ${documento.tipoDocumento} anexado para análise.`,
+      );
+      if (inicioAnalise.kind === 'left') return inicioAnalise;
     }
 
     this.documentos.push(documento);
+    return right(undefined);
   }
 
-  registrarInspecao(inspecao: Inspecao): void {
+  registrarInspecao(inspecao: Inspecao): Either<RegistroInspecaoError, void> {
+    const imutavel = this.verificarImutabilidade();
+    if (imutavel.kind === 'left') return imutavel;
+
+    if (this.status === StatusCarga.BLOQUEADA) {
+      return left(new CargaBloqueadaError());
+    }
+
     if (
-      this.status === StatusCarga.CANCELADA ||
-      this.status === StatusCarga.FINALIZADA
+      this.status !== StatusCarga.EM_ANALISE &&
+      this.status !== StatusCarga.EM_INSPECAO
     ) {
-      throw new Error(
-        'Não é possível registrar inspeções em carga cancelada ou finalizada.',
+      return left(new InspecaoForaDeEtapaError(this.status));
+    }
+
+    if (this.status === StatusCarga.EM_ANALISE) {
+      const inicioInspecao = this.changeStatus(
+        StatusCarga.EM_INSPECAO,
+        inspecao.inspetorId,
+        'Inspeção iniciada.',
+        inspecao.dataRealizacao,
       );
+      if (inicioInspecao.kind === 'left') return inicioInspecao;
     }
 
     if (inspecao.resultado === ResultadoInspecao.REPROVADO) {
-      this.changeStatus(
+      const bloqueio = this.changeStatus(
         StatusCarga.BLOQUEADA,
         inspecao.inspetorId,
         inspecao.observacoes || 'Inspeção reprovada.',
         inspecao.dataRealizacao,
       );
-    } else if (
-      this.status === StatusCarga.AGUARDANDO_DOCUMENTACAO ||
-      this.status === StatusCarga.DOCUMENTACAO_VALIDADA
-    ) {
-      this.changeStatus(
-        StatusCarga.EM_INSPECAO,
-        inspecao.inspetorId,
-        inspecao.observacoes || 'Inspeção realizada.',
-        inspecao.dataRealizacao,
-      );
+      if (bloqueio.kind === 'left') return bloqueio;
     }
 
     this.inspecoes.push(inspecao);
+    return right(undefined);
   }
 
-  podeLiberar(): { ok: boolean; motivos: string[] } {
-    const motivos: string[] = [];
-
-    if (this.documentos.length === 0) {
-      motivos.push('Documentação incompleta ou vencida.');
-    } else {
-      const documentosInvalidos = this.documentos.filter((documento) => {
-        const vencido = documento.estaVencido();
-        const valido =
-          documento.statusValidacao === StatusValidacao.VALIDADO && !vencido;
-        return !valido;
-      });
-
-      if (documentosInvalidos.length > 0) {
-        motivos.push('Documentação incompleta ou vencida.');
-      }
+  liberarCarga(
+    justificativa: string,
+    responsavelId: string,
+    agora: Date = new Date(),
+  ): Either<LiberacaoCargaError, void> {
+    if (!justificativa || justificativa.trim().length === 0) {
+      return left(new JustificativaLiberacaoObrigatoriaError());
     }
+
+    const imutavel = this.verificarImutabilidade();
+    if (imutavel.kind === 'left') return imutavel;
+
+    if (this.status === StatusCarga.BLOQUEADA) {
+      return left(new CargaBloqueadaError());
+    }
+
+    const documentacao = this.verificarDocumentacao(agora);
+    if (documentacao.kind === 'left') return documentacao;
 
     const temInspecaoAprovada = this.inspecoes.some(
       (inspecao) => inspecao.resultado === ResultadoInspecao.APROVADO,
     );
     if (!temInspecaoAprovada) {
-      motivos.push('Nenhuma inspeção aprovada.');
+      return left(new InspecaoNaoAprovadaError());
     }
 
-    return { ok: motivos.length === 0, motivos };
+    return this.changeStatus(
+      StatusCarga.LIBERADA,
+      responsavelId,
+      justificativa,
+      agora,
+    );
   }
 
-  liberarCarga(justificativa: string, responsavelId: string): void {
-    if (!justificativa || justificativa.trim().length === 0) {
-      throw new Error('Justificativa de liberação é obrigatória.');
-    }
-
-    const resultado = this.podeLiberar();
-    if (!resultado.ok) {
-      throw new Error(`Impossível liberar: ${resultado.motivos.join('; ')}`);
-    }
-
-    this.changeStatus(StatusCarga.LIBERADA, responsavelId, justificativa);
-  }
-
-  bloquearCarga(motivo: string, responsavelId: string): void {
+  bloquearCarga(
+    motivo: string,
+    responsavelId: string,
+  ): Either<BloqueioCargaError, void> {
     if (!motivo || motivo.trim().length === 0) {
-      throw new Error('Motivo do bloqueio é obrigatório.');
+      return left(new MotivoBloqueioObrigatorioError());
     }
 
-    this.changeStatus(StatusCarga.BLOQUEADA, responsavelId, motivo);
+    return this.changeStatus(StatusCarga.BLOQUEADA, responsavelId, motivo);
+  }
+
+  private verificarImutabilidade(): Either<CargaImutavelError, void> {
+    if (this.status === StatusCarga.CANCELADA) {
+      return left(new CargaCanceladaError());
+    }
+    if (this.status === StatusCarga.FINALIZADA) {
+      return left(new CargaFinalizadaError());
+    }
+
+    return right(undefined);
+  }
+
+  private verificarDocumentacao(
+    agora: Date,
+  ): Either<DocumentacaoLiberacaoError, void> {
+    if (this.documentos.length === 0) {
+      return left(new DocumentoObrigatorioAusenteError());
+    }
+
+    for (const documento of this.documentos) {
+      if (documento.statusValidacao === StatusValidacao.REJEITADO) {
+        return left(new DocumentoRejeitadoError(documento.id));
+      }
+      if (documento.statusValidacao === StatusValidacao.PENDENTE) {
+        return left(new DocumentoPendenteError(documento.id));
+      }
+      if (documento.estaVencido(agora)) {
+        return left(new DocumentoVencidoError(documento.id));
+      }
+    }
+
+    return right(undefined);
   }
 }

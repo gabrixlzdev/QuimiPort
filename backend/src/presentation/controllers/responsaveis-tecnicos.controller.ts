@@ -4,6 +4,7 @@ import type {
   CadastrarResponsavelTecnicoInputDto,
   ResponsavelTecnicoOutputDto,
 } from '../../application/dtos/responsavel-tecnico.dto.js';
+import { toHttpException } from '../errors/domain-error-http.mapper.js';
 
 @Controller('responsaveis-tecnicos')
 export class ResponsaveisTecnicosController {
@@ -15,6 +16,10 @@ export class ResponsaveisTecnicosController {
   async cadastrar(
     @Body() body: CadastrarResponsavelTecnicoInputDto,
   ): Promise<ResponsavelTecnicoOutputDto> {
-    return this.cadastrarResponsavelTecnicoUseCase.execute(body);
+    const resultado =
+      await this.cadastrarResponsavelTecnicoUseCase.execute(body);
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return resultado.value;
   }
 }

@@ -13,6 +13,7 @@ import { HistoricoStatusCargaOrmEntity } from '../entities/historico-status-carg
 import { InspecaoOrmEntity } from '../entities/inspecao.orm-entity.js';
 import { QuantidadeCargaEmbeddable } from '../entities/quantidade-carga.embeddable.js';
 import { ResponsavelTecnicoOrmEntity } from '../entities/responsavel-tecnico.orm-entity.js';
+import { getOrThrow } from '../../../shared/either.js';
 
 @Injectable()
 export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
@@ -121,11 +122,15 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
     const carga = CargaQuimicaAggregate.restaurar(
       {
         id: entity.id,
-        codigoIdentificacao: new CodigoIdentificacao(entity.codigoIdentificacao),
+        codigoIdentificacao: getOrThrow(
+          CodigoIdentificacao.create(entity.codigoIdentificacao),
+        ),
         produtoQuimicoId: entity.produtoQuimicoId,
-        quantidade: new QuantidadeCarga(
-          entity.quantidade.valor,
-          entity.quantidade.unidade,
+        quantidade: getOrThrow(
+          QuantidadeCarga.create(
+            Number(entity.quantidade.valor),
+            entity.quantidade.unidade,
+          ),
         ),
         responsavelTecnicoId: entity.responsavelTecnico.id,
         origem: entity.origem,
@@ -146,9 +151,9 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
         })),
     );
 
-    carga.documentos = entity.documentos.map(
-      (documento) =>
-        new DocumentoCarga({
+    carga.documentos = entity.documentos.map((documento) =>
+      getOrThrow(
+        DocumentoCarga.create({
           id: documento.id,
           tipoDocumento: documento.tipoDocumento,
           numeroReferencia: documento.numeroReferencia,
@@ -157,10 +162,11 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
           dataValidade: documento.dataValidade,
           statusValidacao: documento.statusValidacao,
         }),
+      ),
     );
-    carga.inspecoes = entity.inspecoes.map(
-      (inspecao) =>
-        new Inspecao({
+    carga.inspecoes = entity.inspecoes.map((inspecao) =>
+      getOrThrow(
+        Inspecao.create({
           id: inspecao.id,
           dataSolicitacao: inspecao.dataSolicitacao,
           dataRealizacao: inspecao.dataRealizacao,
@@ -168,6 +174,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
           resultado: inspecao.resultado,
           observacoes: inspecao.observacoes,
         }),
+      ),
     );
     return carga;
   }

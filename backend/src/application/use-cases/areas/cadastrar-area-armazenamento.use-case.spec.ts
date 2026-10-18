@@ -3,22 +3,29 @@ import { InMemoryAreaArmazenamentoRepository } from '../../../infrastructure/dat
 import { InMemoryCargaQuimicaRepository } from '../../../infrastructure/database/repositories/carga-quimica.repository.js';
 import { CargaQuimicaAggregate } from '../../../domain/aggregate/carga-quimica/carga-quimica.aggregate.js';
 import { QuantidadeCarga } from '../../../domain/value-objects/quantidade-carga.vo.js';
+import { CodigoIdentificacao } from '../../../domain/value-objects/codigo-identificacao.vo.js';
 import { UnidadeMedida } from '../../../domain/enums.js';
+import { CargaNaoEncontradaError } from '../../../domain/errors/carga-quimica.errors.js';
+import { getOrThrow } from '../../../shared/either.js';
 import { CadastrarAreaArmazenamentoUseCase } from './cadastrar-area-armazenamento.use-case.js';
 
 describe('CadastrarAreaArmazenamentoUseCase', () => {
   const criarCarga = (id: string) =>
-    new CargaQuimicaAggregate({
-      id,
-      codigoIdentificacao: 'ABC12345',
-      produtoQuimicoId: 'produto-1',
-      quantidade: new QuantidadeCarga(100, UnidadeMedida.QUILOGRAMAS),
-      responsavelTecnicoId: 'responsavel-1',
-      origem: 'Santos',
-      destino: 'Rio',
-      dataEntrada: new Date('2026-01-01T00:00:00Z'),
-      grupoCompatibilidade: 'CLASSE_8',
-    });
+    getOrThrow(
+      CargaQuimicaAggregate.create({
+        id,
+        codigoIdentificacao: getOrThrow(CodigoIdentificacao.create('ABC12345')),
+        produtoQuimicoId: 'produto-1',
+        quantidade: getOrThrow(
+          QuantidadeCarga.create(100, UnidadeMedida.QUILOGRAMAS),
+        ),
+        responsavelTecnicoId: 'responsavel-1',
+        origem: 'Santos',
+        destino: 'Rio',
+        dataEntrada: new Date('2026-01-01T00:00:00Z'),
+        grupoCompatibilidade: 'CLASSE_8',
+      }),
+    );
 
   it('gera ID ARM e persiste a área criada quando a carga existe', async () => {
     const areaRepository = new InMemoryAreaArmazenamentoRepository();
@@ -29,14 +36,16 @@ describe('CadastrarAreaArmazenamentoUseCase', () => {
       cargaRepository,
     );
 
-    const output = await useCase.execute({
-      nome: 'Pátio A',
-      codigo: 'PA-01',
-      tipo: 'PATIO',
-      cargaQuimicaId: 'carga-1',
-      capacidadeMaxima: 1000,
-      quantidadeOcupada: 500,
-    });
+    const output = getOrThrow(
+      await useCase.execute({
+        nome: 'Pátio A',
+        codigo: 'PA-01',
+        tipo: 'PATIO',
+        cargaQuimicaId: 'carga-1',
+        capacidadeMaxima: 1000,
+        quantidadeOcupada: 500,
+      }),
+    );
 
     expect(output.id).toMatch(
       /^ARM-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
@@ -52,16 +61,20 @@ describe('CadastrarAreaArmazenamentoUseCase', () => {
       cargaRepository,
     );
 
-    await expect(
-      useCase.execute({
-        nome: 'Pátio A',
-        codigo: 'PA-01',
-        tipo: 'PATIO',
-        cargaQuimicaId: 'carga-inexistente',
-        capacidadeMaxima: 1000,
-        quantidadeOcupada: 500,
-      }),
-    ).rejects.toThrow('Carga química não encontrada.');
+    const resultado = await useCase.execute({
+      nome: 'Pátio A',
+      codigo: 'PA-01',
+      tipo: 'PATIO',
+      cargaQuimicaId: 'carga-inexistente',
+      capacidadeMaxima: 1000,
+      quantidadeOcupada: 500,
+    });
+
+    expect(resultado.kind).toBe('left');
+    if (resultado.kind === 'left') {
+      expect(resultado.error).toBeInstanceOf(CargaNaoEncontradaError);
+      expect(resultado.error.message).toBe('Carga química não encontrada.');
+    }
     expect(await areaRepository.listar()).toEqual([]);
   });
 });
