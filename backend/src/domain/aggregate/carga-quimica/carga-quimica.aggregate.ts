@@ -27,6 +27,7 @@ import { DocumentoCarga } from './documento-carga.entity.js';
 
 export type CargaQuimicaAggregateProps = {
   id: string;
+  autorizacaoSuperiorId?: string;
   codigoIdentificacao: CodigoIdentificacao;
   produtoQuimicoId: string;
   quantidade: QuantidadeCarga;
@@ -86,6 +87,7 @@ export class CargaQuimicaAggregate {
   public readonly dataEntrada: Date;
   public readonly dataCriacao: Date;
   public readonly grupoCompatibilidade: string;
+  public readonly autorizacaoSuperiorId?: string;
 
   public documentos: DocumentoCarga[] = [];
   public inspecoes: Inspecao[] = [];
@@ -114,6 +116,7 @@ export class CargaQuimicaAggregate {
     this.dataEntrada = props.dataEntrada;
     this.dataCriacao = props.dataCriacao ?? new Date();
     this.grupoCompatibilidade = props.grupoCompatibilidade;
+    this.autorizacaoSuperiorId = props.autorizacaoSuperiorId;
     this.statusAtual = props.status ?? StatusCarga.REGISTRADA;
     this.eventosStatus.push({
       statusAnterior: null,
@@ -291,6 +294,45 @@ export class CargaQuimicaAggregate {
     });
     this.statusAtual = novoStatus;
     return right(undefined);
+  }
+
+  iniciarMovimentacao(
+    responsavelId: string,
+    motivo: string,
+    data: Date = new Date(),
+  ): Either<AlteracaoStatusError, void> {
+    return this.changeStatus(
+      StatusCarga.EM_MOVIMENTACAO,
+      responsavelId,
+      motivo,
+      data,
+    );
+  }
+
+  cancelarCarga(
+    responsavelId: string,
+    motivo: string,
+    data: Date = new Date(),
+  ): Either<AlteracaoStatusError, void> {
+    return this.changeStatus(
+      StatusCarga.CANCELADA,
+      responsavelId,
+      motivo,
+      data,
+    );
+  }
+
+  concluirMovimentacao(
+    responsavelId: string,
+    motivo: string,
+    data: Date = new Date(),
+  ): Either<AlteracaoStatusError, void> {
+    return this.changeStatus(
+      StatusCarga.FINALIZADA,
+      responsavelId,
+      motivo,
+      data,
+    );
   }
 
   anexarDocumento(

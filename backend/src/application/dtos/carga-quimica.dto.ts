@@ -10,6 +10,7 @@ export type RegistrarCargaInputDto = {
   destino: string;
   dataEntrada: Date;
   grupoCompatibilidade: string;
+  autorizacaoSuperiorId?: string;
 };
 
 export type CargaQuimicaOutputDto = {
@@ -24,6 +25,7 @@ export type CargaQuimicaOutputDto = {
   dataEntrada: Date;
   grupoCompatibilidade: string;
   status: StatusCarga;
+  autorizacaoSuperiorId?: string;
 };
 
 export type ValidarDocumentacaoInputDto = {
@@ -64,4 +66,10 @@ export type BloquearCargaInputDto = {
   cargaQuimicaId: string;
   motivo: string;
   responsavelId: string;
+};
+
+export type AlterarStatusCargaInputDto = {
+  cargaQuimicaId: string;
+  responsavelId: string;
+  motivo: string;
 };

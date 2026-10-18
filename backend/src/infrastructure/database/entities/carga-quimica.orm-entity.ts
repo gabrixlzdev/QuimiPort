@@ -58,6 +58,13 @@ export class CargaQuimicaOrmEntity {
   @Column({ name: 'grupo_compatibilidade', type: 'varchar' })
   grupoCompatibilidade: string;
 
+  @Column({
+    name: 'autorizacao_superior_id',
+    type: 'varchar',
+    nullable: true,
+  })
+  autorizacaoSuperiorId?: string | null;
+
   @Column({ type: 'enum', enum: StatusCarga })
   status: StatusCarga;
 

@@ -7,6 +7,24 @@ import {
 
 export class CargaQuimicaInvalidaError extends DadosInvalidosError {}
 
+export class DataEntradaInvalidaError extends DadosInvalidosError {
+  constructor() {
+    super('Data de entrada da carga inválida.');
+  }
+}
+
+export class AprovacaoSuperiorObrigatoriaError extends DadosInvalidosError {
+  constructor() {
+    super('Registro retroativo exige autorização de cargo superior.');
+  }
+}
+
+export class GrupoCompatibilidadeIncompativelError extends RegraNegocioError {
+  constructor() {
+    super('Grupo de compatibilidade da carga diverge do produto químico.');
+  }
+}
+
 export class CodigoIdentificacaoInvalidoError extends DadosInvalidosError {
   constructor() {
     super(
