@@ -20,11 +20,11 @@ export class ClassificacaoRisco {
     numeroONU: string,
     grupoEmbalagem: string,
   ): Either<ClassificacaoRiscoInvalidaError, ClassificacaoRisco> {
-    if (!classe || classe.trim().length === 0) {
+    if (typeof classe !== 'string' || classe.trim().length === 0) {
       return left(new ClassificacaoRiscoInvalidaError('Classe de risco é obrigatória.'));
     }
 
-    if (!/^[0-9]{4}$/.test(numeroONU)) {
+    if (typeof numeroONU !== 'string' || !/^[0-9]{4}$/.test(numeroONU)) {
       return left(new ClassificacaoRiscoInvalidaError('Número ONU deve conter exatamente 4 dígitos.'));
     }
 
