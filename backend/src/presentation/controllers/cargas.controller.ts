@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { RegistrarCargaUseCase } from '../../application/use-cases/cargas/registrar-carga.use-case.js';
 import { ValidarDocumentacaoUseCase } from '../../application/use-cases/cargas/validar-documentacao.use-case.js';
 import { LiberarCargaUseCase } from '../../application/use-cases/cargas/liberar-carga.use-case.js';
@@ -8,6 +8,8 @@ import { AnexarDocumentoUseCase } from '../../application/use-cases/cargas/anexa
 import { CancelarCargaUseCase } from '../../application/use-cases/cargas/cancelar-carga.use-case.js';
 import { ConcluirMovimentacaoUseCase } from '../../application/use-cases/cargas/concluir-movimentacao.use-case.js';
 import { IniciarMovimentacaoUseCase } from '../../application/use-cases/cargas/iniciar-movimentacao.use-case.js';
+import { ListarCargasUseCase } from '../../application/use-cases/cargas/listar-cargas.use-case.js';
+import { BuscarCargaUseCase } from '../../application/use-cases/cargas/buscar-carga.use-case.js';
 import * as cargaQuimicaDto from '../../application/dtos/carga-quimica.dto.js';
 import { toHttpException } from '../errors/domain-error-http.mapper.js';
 
@@ -23,7 +25,27 @@ export class CargasController {
     private readonly iniciarMovimentacaoUseCase: IniciarMovimentacaoUseCase,
     private readonly cancelarCargaUseCase: CancelarCargaUseCase,
     private readonly concluirMovimentacaoUseCase: ConcluirMovimentacaoUseCase,
+    private readonly listarCargasUseCase: ListarCargasUseCase,
+    private readonly buscarCargaUseCase: BuscarCargaUseCase,
   ) {}
+
+  @Get()
+  async listar(): Promise<cargaQuimicaDto.CargaQuimicaOutputDto[]> {
+    const resultado = await this.listarCargasUseCase.execute();
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return resultado.value;
+  }
+
+  @Get(':id')
+  async buscar(
+    @Param('id') id: string,
+  ): Promise<cargaQuimicaDto.CargaQuimicaOutputDto> {
+    const resultado = await this.buscarCargaUseCase.execute(id);
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return resultado.value;
+  }
 
   @Post()
   async registrar(

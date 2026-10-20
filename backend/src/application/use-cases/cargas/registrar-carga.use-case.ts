@@ -20,6 +20,7 @@ import { QuantidadeCarga } from '../../../domain/value-objects/quantidade-carga.
 import { CodigoIdentificacao } from '../../../domain/value-objects/codigo-identificacao.vo.js';
 import { Either, left, right } from '../../../shared/either.js';
 import { generateEntityId } from '../../id-generator.js';
+import { CargaQuimicaMapper } from '../../mappers/carga-quimica.mapper.js';
 import {
   RegistrarCargaInputDto,
   CargaQuimicaOutputDto,
@@ -116,19 +117,6 @@ export class RegistrarCargaUseCase {
 
     const salva = await this.cargaRepository.salvar(carga.value);
 
-    return right({
-      id: salva.id,
-      codigoIdentificacao: salva.codigoIdentificacao.codigo,
-      produtoQuimicoId: salva.produtoQuimicoId,
-      quantidadeValor: salva.quantidade.valor,
-      quantidadeUnidade: salva.quantidade.unidade,
-      responsavelTecnicoId: salva.responsavelTecnicoId,
-      origem: salva.origem,
-      destino: salva.destino,
-      dataEntrada: salva.dataEntrada,
-      grupoCompatibilidade: salva.grupoCompatibilidade,
-      status: salva.status,
-      autorizacaoSuperiorId: salva.autorizacaoSuperiorId,
-    });
+    return right(CargaQuimicaMapper.toOutput(salva));
   }
 }
