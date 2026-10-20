@@ -9,6 +9,7 @@ import { InMemoryCargaQuimicaRepository } from '../../../infrastructure/database
 import { CancelarCargaUseCase } from './cancelar-carga.use-case.js';
 import { ConcluirMovimentacaoUseCase } from './concluir-movimentacao.use-case.js';
 import { IniciarMovimentacaoUseCase } from './iniciar-movimentacao.use-case.js';
+import { AtualizarStatusCargaUseCase } from './atualizar-status-carga.use-case.js';
 
 const criarCarga = () =>
   getOrThrow(
@@ -124,5 +125,55 @@ describe('casos de uso de movimentação da carga', () => {
     });
     expect(foraDaEtapa.kind).toBe('left');
     expect(salvar).toHaveBeenCalledOnce();
+  });
+
+  it('atualiza status via AtualizarStatusCargaUseCase respeitando as regras de cada etapa', async () => {
+    const repository = new InMemoryCargaQuimicaRepository();
+    const carga = prepararCargaNoStatus(criarCarga(), StatusCarga.LIBERADA);
+    await repository.salvar(carga);
+    const atualizarStatus = new AtualizarStatusCargaUseCase(repository);
+
+    const emMovimentacao = await atualizarStatus.execute({
+      cargaQuimicaId: carga.id,
+      status: StatusCarga.EM_MOVIMENTACAO,
+      responsavelId: 'operador-2',
+      motivo: 'Iniciando movimentação via PATCH status.',
+    });
+    expect(emMovimentacao.kind).toBe('right');
+    expect(carga.status).toBe(StatusCarga.EM_MOVIMENTACAO);
+
+    const finalizada = await atualizarStatus.execute({
+      cargaQuimicaId: carga.id,
+      status: StatusCarga.FINALIZADA,
+      responsavelId: 'operador-2',
+      motivo: 'Concluindo movimentação via PATCH status.',
+    });
+    expect(finalizada.kind).toBe('right');
+    expect(carga.status).toBe(StatusCarga.FINALIZADA);
+  });
+
+  it('rejeita no AtualizarStatusCargaUseCase liberação sem documentação/inspeção ou status automático', async () => {
+    const repository = new InMemoryCargaQuimicaRepository();
+    const carga = criarCarga();
+    await repository.salvar(carga);
+    const atualizarStatus = new AtualizarStatusCargaUseCase(repository);
+
+    const tentativaLiberarSemDoc = await atualizarStatus.execute({
+      cargaQuimicaId: carga.id,
+      status: StatusCarga.LIBERADA,
+      responsavelId: 'gestor-1',
+      motivo: 'Tentando pular etapas.',
+    });
+    expect(tentativaLiberarSemDoc.kind).toBe('left');
+    expect(carga.status).toBe(StatusCarga.REGISTRADA);
+
+    const tentativaAnaliseManual = await atualizarStatus.execute({
+      cargaQuimicaId: carga.id,
+      status: StatusCarga.EM_ANALISE,
+      responsavelId: 'gestor-1',
+      motivo: 'Tentando forçar EM_ANALISE sem documento.',
+    });
+    expect(tentativaAnaliseManual.kind).toBe('left');
+    expect(carga.status).toBe(StatusCarga.REGISTRADA);
   });
 });

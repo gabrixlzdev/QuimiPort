@@ -73,3 +73,10 @@ export type AlterarStatusCargaInputDto = {
   responsavelId: string;
   motivo: string;
 };
+
+export type AtualizarStatusCargaInputDto = {
+  cargaQuimicaId: string;
+  status: StatusCarga;
+  responsavelId: string;
+  motivo: string;
+};

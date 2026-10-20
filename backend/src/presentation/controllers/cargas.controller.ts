@@ -10,6 +10,7 @@ import { ConcluirMovimentacaoUseCase } from '../../application/use-cases/cargas/
 import { IniciarMovimentacaoUseCase } from '../../application/use-cases/cargas/iniciar-movimentacao.use-case.js';
 import { ListarCargasUseCase } from '../../application/use-cases/cargas/listar-cargas.use-case.js';
 import { BuscarCargaUseCase } from '../../application/use-cases/cargas/buscar-carga.use-case.js';
+import { AtualizarStatusCargaUseCase } from '../../application/use-cases/cargas/atualizar-status-carga.use-case.js';
 import * as cargaQuimicaDto from '../../application/dtos/carga-quimica.dto.js';
 import { toHttpException } from '../errors/domain-error-http.mapper.js';
 
@@ -27,6 +28,7 @@ export class CargasController {
     private readonly concluirMovimentacaoUseCase: ConcluirMovimentacaoUseCase,
     private readonly listarCargasUseCase: ListarCargasUseCase,
     private readonly buscarCargaUseCase: BuscarCargaUseCase,
+    private readonly atualizarStatusCargaUseCase: AtualizarStatusCargaUseCase,
   ) {}
 
   @Get()
@@ -171,5 +173,20 @@ export class CargasController {
     if (resultado.kind === 'left') throw toHttpException(resultado.error);
 
     return { mensagem: 'Movimentação concluída com sucesso.' };
+  }
+
+  @Patch(':id/status')
+  async atualizarStatus(
+    @Param('id') cargaQuimicaId: string,
+    @Body()
+    body: Omit<cargaQuimicaDto.AtualizarStatusCargaInputDto, 'cargaQuimicaId'>,
+  ): Promise<{ mensagem: string }> {
+    const resultado = await this.atualizarStatusCargaUseCase.execute({
+      ...body,
+      cargaQuimicaId,
+    });
+    if (resultado.kind === 'left') throw toHttpException(resultado.error);
+
+    return { mensagem: 'Status da carga atualizado com sucesso.' };
   }
 }
