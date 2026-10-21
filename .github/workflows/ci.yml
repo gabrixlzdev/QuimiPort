@@ -1,0 +1,39 @@
+name: CI QuimiPort
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    name: Lint, Testes e Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar o Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+        working-directory: backend
+
+      - name: Checar qualidade do código (Lint)
+        run: npm run lint
+        working-directory: backend
+
+      - name: Rodar testes automatizados
+        run: npm test
+        working-directory: backend
+
+      - name: Compilar o projeto (Build)
+        run: npm run build
+        working-directory: backend
