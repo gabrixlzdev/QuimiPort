@@ -5,16 +5,13 @@ import {
 } from '../../application/dtos/produto-quimico.dto.js';
 
 /**
- * Por que usamos `class` e criamos este arquivo novo em `presentation/dtos/`?
- * 
- * 1. Clean Architecture: Os DTOs originais em `application/dtos/` são intocados para manter a
+ * Por que usamos `class` e criamos este arquivo novo em `presentation/dtos/`:
+ *Clean Architecture: Os DTOs originais em `application/dtos/` são intocados para manter a
  *    camada de aplicação pura, sem dependência ou acoplamento com decorators do NestJS (@nestjs/swagger).
- * 
- * 2. Tempo de execução (Runtime): O compilador do TypeScript remove completamente declarações de
+ *Tempo de execução (Runtime): O compilador do TypeScript remove completamente declarações de
  *    `type` ao gerar o JavaScript final. O Swagger (OpenAPI) precisa inspecionar classes em tempo de
  *    execução para montar os esquemas visuais, exemplos e metadados no navegador.
- * 
- * 3. Contrato estrito: O uso de `implements CadastrarProdutoInputDto` garante que qualquer alteração
+ *Contrato estrito: O uso de `implements CadastrarProdutoInputDto` garante que qualquer alteração
  *    futura na camada de aplicação obrigue a documentação da API a se manter 100% sincronizada.
  */
 
