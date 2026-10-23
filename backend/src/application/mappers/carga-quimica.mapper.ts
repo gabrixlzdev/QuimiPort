@@ -18,6 +18,8 @@ export class CargaQuimicaMapper {
       grupoCompatibilidade: carga.grupoCompatibilidade,
       status: carga.status,
       autorizacaoSuperiorId: carga.autorizacaoSuperiorId,
+      dataCriacao: carga.dataCriacao,
+      dataAtualizacao: carga.dataAtualizacao,
     };
   }
 }
