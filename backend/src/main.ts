@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
+import { HttpLoggingInterceptor } from './presentation/interceptors/http-logging.interceptor.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
   const config = new DocumentBuilder()
     .setTitle('QuimiPort API')
