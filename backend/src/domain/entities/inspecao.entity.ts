@@ -30,11 +30,29 @@ export class Inspecao {
 
   static create(props: InspecaoProps): Either<InspecaoInvalidaError, Inspecao> {
     if (!props.id || !props.inspetorId) {
-      return left(new InspecaoInvalidaError('Inspeção deve possuir id e inspetor válidos.'));
+      return left(
+        new InspecaoInvalidaError(
+          'Inspeção deve possuir id e inspetor válidos.',
+        ),
+      );
     }
 
-    if (!(props.dataRealizacao instanceof Date) || Number.isNaN(props.dataRealizacao.getTime())) {
-      return left(new InspecaoInvalidaError('Data de realização da inspeção inválida.'));
+    if (
+      !(props.dataSolicitacao instanceof Date) ||
+      Number.isNaN(props.dataSolicitacao.getTime())
+    ) {
+      return left(
+        new InspecaoInvalidaError('Data de solicitação da inspeção inválida.'),
+      );
+    }
+
+    if (
+      !(props.dataRealizacao instanceof Date) ||
+      Number.isNaN(props.dataRealizacao.getTime())
+    ) {
+      return left(
+        new InspecaoInvalidaError('Data de realização da inspeção inválida.'),
+      );
     }
 
     if (!Object.values(ResultadoInspecao).includes(props.resultado)) {

@@ -19,7 +19,8 @@ import {
 
 export class RegistrarCargaBodyDto implements RegistrarCargaInputDto {
   @ApiProperty({
-    description: 'Código alfanumérico identificador da carga (8 a 20 caracteres)',
+    description:
+      'Código alfanumérico identificador da carga (8 a 20 caracteres)',
     example: 'CRQ2026101901',
   })
   codigoIdentificacao: string;
@@ -44,7 +45,8 @@ export class RegistrarCargaBodyDto implements RegistrarCargaInputDto {
   quantidadeUnidade: UnidadeMedida;
 
   @ApiProperty({
-    description: 'ID do responsável técnico cadastrado e com registro profissional válido',
+    description:
+      'ID do responsável técnico cadastrado e com registro profissional válido',
     example: 'RTC2026101901',
   })
   responsavelTecnicoId: string;
@@ -68,21 +70,24 @@ export class RegistrarCargaBodyDto implements RegistrarCargaInputDto {
   dataEntrada: Date;
 
   @ApiProperty({
-    description: 'Grupo de compatibilidade química da carga (deve bater com o produto)',
+    description:
+      'Grupo de compatibilidade química da carga (deve bater com o produto)',
     example: 'Ácido forte mineral',
   })
   grupoCompatibilidade: string;
 
   @ApiPropertyOptional({
-    description: 'ID da autorização superior (obrigatório se o registro for retroativo)',
+    description:
+      'ID da autorização superior (obrigatório se o registro for retroativo)',
     example: 'AUTH-GESTOR-99',
   })
   autorizacaoSuperiorId?: string;
 }
 
-export class AtualizarStatusCargaBodyDto
-  implements Omit<AtualizarStatusCargaInputDto, 'cargaQuimicaId'>
-{
+export class AtualizarStatusCargaBodyDto implements Omit<
+  AtualizarStatusCargaInputDto,
+  'cargaQuimicaId'
+> {
   @ApiProperty({
     description: 'Novo status desejado para a carga química',
     enum: StatusCarga,
@@ -91,7 +96,8 @@ export class AtualizarStatusCargaBodyDto
   status: StatusCarga;
 
   @ApiProperty({
-    description: 'Identificador do operador ou responsável pela alteração de status',
+    description:
+      'Identificador do operador ou responsável pela alteração de status',
     example: 'OP-SANTOS-101',
   })
   responsavelId: string;
@@ -103,11 +109,13 @@ export class AtualizarStatusCargaBodyDto
   motivo: string;
 }
 
-export class AnexarDocumentoBodyDto
-  implements Omit<AnexarDocumentoInputDto, 'cargaQuimicaId'>
-{
+export class AnexarDocumentoBodyDto implements Omit<
+  AnexarDocumentoInputDto,
+  'cargaQuimicaId'
+> {
   @ApiProperty({
-    description: 'Tipo do documento obrigatório (FDS, FISPQ, LICENCA_AMBIENTAL, DECLARACAO_CARGA_PERIGOSA)',
+    description:
+      'Tipo do documento obrigatório (FDS, FISPQ, LICENCA_AMBIENTAL, DECLARACAO_CARGA_PERIGOSA)',
     example: 'FISPQ',
   })
   tipoDocumento: string;
@@ -137,9 +145,10 @@ export class AnexarDocumentoBodyDto
   dataValidade: string;
 }
 
-export class RealizarInspecaoBodyDto
-  implements Omit<RealizarInspecaoInputDto, 'cargaQuimicaId'>
-{
+export class RealizarInspecaoBodyDto implements Omit<
+  RealizarInspecaoInputDto,
+  'cargaQuimicaId' | 'dataSolicitacao' | 'dataRealizacao'
+> {
   @ApiPropertyOptional({
     description: 'ID pré-gerado para a inspeção, se aplicável',
     example: 'INS2026101901',
@@ -147,16 +156,16 @@ export class RealizarInspecaoBodyDto
   id?: string;
 
   @ApiProperty({
-    description: 'Data de solicitação da vistoria',
+    description: 'Data de solicitação da vistoria (formato ISO 8601)',
     example: '2026-10-22T09:00:00.000Z',
   })
-  dataSolicitacao: Date;
+  dataSolicitacao: string;
 
   @ApiProperty({
-    description: 'Data da realização física da vistoria',
+    description: 'Data da realização física da vistoria (formato ISO 8601)',
     example: '2026-10-22T10:30:00.000Z',
   })
-  dataRealizacao: Date;
+  dataRealizacao: string;
 
   @ApiProperty({
     description: 'Identificador do inspetor responsável pela vistoria',
@@ -178,12 +187,14 @@ export class RealizarInspecaoBodyDto
   observacoes?: string;
 }
 
-export class LiberarCargaBodyDto
-  implements Omit<LiberarCargaInputDto, 'cargaQuimicaId'>
-{
+export class LiberarCargaBodyDto implements Omit<
+  LiberarCargaInputDto,
+  'cargaQuimicaId'
+> {
   @ApiProperty({
     description: 'Justificativa operacional e técnica para liberação da carga',
-    example: 'Documentação completa e vistoria aprovada conforme protocolo de segurança.',
+    example:
+      'Documentação completa e vistoria aprovada conforme protocolo de segurança.',
   })
   justificativa: string;
 
@@ -194,9 +205,10 @@ export class LiberarCargaBodyDto
   responsavelId: string;
 }
 
-export class BloquearCargaBodyDto
-  implements Omit<BloquearCargaInputDto, 'cargaQuimicaId'>
-{
+export class BloquearCargaBodyDto implements Omit<
+  BloquearCargaInputDto,
+  'cargaQuimicaId'
+> {
   @ApiProperty({
     description: 'Motivo técnico do bloqueio imediato da carga',
     example: 'Avaria detectada no invólucro do contêiner durante a inspeção.',
@@ -210,9 +222,10 @@ export class BloquearCargaBodyDto
   responsavelId: string;
 }
 
-export class AcaoCargaBodyDto
-  implements Omit<AlterarStatusCargaInputDto, 'cargaQuimicaId'>
-{
+export class AcaoCargaBodyDto implements Omit<
+  AlterarStatusCargaInputDto,
+  'cargaQuimicaId'
+> {
   @ApiProperty({
     description: 'ID do responsável técnico ou operador pela ação',
     example: 'OP-SANTOS-101',

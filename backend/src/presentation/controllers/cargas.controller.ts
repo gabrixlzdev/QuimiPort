@@ -175,7 +175,10 @@ export class CargasController {
   @Patch(':id/documentos/:documentoId/validar')
   @ApiOperation({ summary: 'Validar documento obrigatório de uma carga' })
   @ApiParam({ name: 'id', description: 'ID da carga química' })
-  @ApiParam({ name: 'documentoId', description: 'ID do documento a ser validado' })
+  @ApiParam({
+    name: 'documentoId',
+    description: 'ID do documento a ser validado',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Documento validado com sucesso.',
@@ -198,7 +201,9 @@ export class CargasController {
   }
 
   @Post(':id/inspecoes')
-  @ApiOperation({ summary: 'Registrar vistoria/inspeção física na carga química' })
+  @ApiOperation({
+    summary: 'Registrar vistoria/inspeção física na carga química',
+  })
   @ApiParam({ name: 'id', description: 'ID da carga química' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -211,8 +216,7 @@ export class CargasController {
   })
   @ApiResponse({
     status: HttpStatus.UNPROCESSABLE_ENTITY,
-    description:
-      'Inspeção fora de etapa permitida ou carga já bloqueada.',
+    description: 'Inspeção fora de etapa permitida ou carga já bloqueada.',
   })
   async registrarInspecao(
     @Param('id') cargaQuimicaId: string,
@@ -221,6 +225,8 @@ export class CargasController {
     const resultado = await this.realizarInspecaoUseCase.execute({
       ...body,
       cargaQuimicaId,
+      dataSolicitacao: new Date(body.dataSolicitacao),
+      dataRealizacao: new Date(body.dataRealizacao),
     });
     if (resultado.kind === 'left') throw toHttpException(resultado.error);
 
@@ -321,7 +327,8 @@ export class CargasController {
   @ApiParam({ name: 'id', description: 'ID da carga química' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Carga finalizada com sucesso (status FINALIZADA, estado terminal).',
+    description:
+      'Carga finalizada com sucesso (status FINALIZADA, estado terminal).',
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -349,7 +356,8 @@ export class CargasController {
   @ApiParam({ name: 'id', description: 'ID da carga química' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Carga cancelada com sucesso (status CANCELADA, estado terminal).',
+    description:
+      'Carga cancelada com sucesso (status CANCELADA, estado terminal).',
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
