@@ -1,8 +1,11 @@
 services:
+  # ----------------------------------------------------------------------------
+  #BANCO DE DADOS (PostgreSQL 16)
+  # ----------------------------------------------------------------------------
   db:
     image: postgres:16-alpine
     container_name: quimiport-db
-    restart: unless-stopped
+    restart: unless-stopped 
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -10,12 +13,41 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
+      # Volume persistente: garante que os dados do banco não sumam se o container for recriado
       - quimiport_db_data:/var/lib/postgresql/data
     healthcheck:
+      # Testa a cada 5 segundos se o banco já terminou de iniciar e aceita conexões reais
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 5s
       timeout: 5s
       retries: 5
 
+  # ----------------------------------------------------------------------------
+  # API BACKEND (NestJS)
+  # ----------------------------------------------------------------------------
+  api:
+    build:
+      # Caminho onde está o código da aplicação e o arquivo Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: quimiport-api
+    restart: unless-stopped
+    ports:
+      # Porta externa (Windows) : Porta interna do container (lê PORT do .env; padrão 3000)
+      - '${PORT:-3000}:${PORT:-3000}'
+    environment:
+      # Variáveis injetadas no ambiente Node.js do container
+      PORT: ${PORT:-3000}
+      POSTGRES_HOST: db # Nome do serviço do banco acima na rede interna do Docker
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    depends_on:
+      db:
+        # PONTO CRÍTICO: Só inicializa a API quando o banco estiver 100% pronto (healthcheck aprovado)
+        condition: service_healthy
+
+# Declaração do volume nomeado que armazena os dados do PostgreSQL
 volumes:
   quimiport_db_data:

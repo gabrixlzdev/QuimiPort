@@ -36,6 +36,7 @@ export type CargaQuimicaAggregateProps = {
   destino: string;
   dataEntrada: Date;
   dataCriacao?: Date;
+  dataAtualizacao?: Date;
   grupoCompatibilidade: string;
   status?: StatusCarga;
 };
@@ -86,6 +87,7 @@ export class CargaQuimicaAggregate {
   public readonly destino: string;
   public readonly dataEntrada: Date;
   public readonly dataCriacao: Date;
+  public dataAtualizacao: Date;
   public readonly grupoCompatibilidade: string;
   public readonly autorizacaoSuperiorId?: string;
 
@@ -115,6 +117,7 @@ export class CargaQuimicaAggregate {
     this.destino = props.destino;
     this.dataEntrada = props.dataEntrada;
     this.dataCriacao = props.dataCriacao ?? new Date();
+    this.dataAtualizacao = props.dataAtualizacao ?? this.dataCriacao;
     this.grupoCompatibilidade = props.grupoCompatibilidade;
     this.autorizacaoSuperiorId = props.autorizacaoSuperiorId;
     this.statusAtual = props.status ?? StatusCarga.REGISTRADA;
@@ -245,6 +248,9 @@ export class CargaQuimicaAggregate {
       })),
     );
     carga.statusAtual = ultimoEvento.statusNovo;
+    carga.dataAtualizacao = new Date(
+      props.dataAtualizacao ?? ultimoEvento.data,
+    );
     return carga;
   }
 
@@ -293,6 +299,7 @@ export class CargaQuimicaAggregate {
       motivo: motivo.trim(),
     });
     this.statusAtual = novoStatus;
+    this.dataAtualizacao = new Date(data);
     return right(undefined);
   }
 

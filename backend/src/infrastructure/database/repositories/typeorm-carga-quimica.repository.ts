@@ -12,6 +12,7 @@ import { DocumentoCargaOrmEntity } from '../entities/documento-carga.orm-entity.
 import { HistoricoStatusCargaOrmEntity } from '../entities/historico-status-carga.orm-entity.js';
 import { InspecaoOrmEntity } from '../entities/inspecao.orm-entity.js';
 import { QuantidadeCargaEmbeddable } from '../entities/quantidade-carga.embeddable.js';
+import { ProdutoQuimicoOrmEntity } from '../entities/produto-quimico.orm-entity.js';
 import { ResponsavelTecnicoOrmEntity } from '../entities/responsavel-tecnico.orm-entity.js';
 import { getOrThrow } from '../../../shared/either.js';
 
@@ -35,6 +36,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
       .findOne({
         where: { id },
         relations: {
+          produtoQuimico: true,
           responsavelTecnico: true,
           documentos: true,
           inspecoes: true,
@@ -50,6 +52,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
       .getRepository(CargaQuimicaOrmEntity)
       .find({
         relations: {
+          produtoQuimico: true,
           responsavelTecnico: true,
           documentos: true,
           inspecoes: true,
@@ -64,7 +67,9 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
     const entity = new CargaQuimicaOrmEntity();
     entity.id = carga.id;
     entity.codigoIdentificacao = carga.codigoIdentificacao.codigo;
-    entity.produtoQuimicoId = carga.produtoQuimicoId;
+    entity.produtoQuimico = Object.assign(new ProdutoQuimicoOrmEntity(), {
+      id: carga.produtoQuimicoId,
+    });
     entity.quantidade = Object.assign(new QuantidadeCargaEmbeddable(), {
       valor: carga.quantidade.valor,
       unidade: carga.quantidade.unidade,
@@ -77,6 +82,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
     entity.destino = carga.destino;
     entity.dataEntrada = carga.dataEntrada;
     entity.dataCriacao = carga.dataCriacao;
+    entity.dataAtualizacao = carga.dataAtualizacao;
     entity.grupoCompatibilidade = carga.grupoCompatibilidade;
     entity.autorizacaoSuperiorId = carga.autorizacaoSuperiorId ?? null;
     entity.status = carga.status;
@@ -126,7 +132,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
         codigoIdentificacao: getOrThrow(
           CodigoIdentificacao.create(entity.codigoIdentificacao),
         ),
-        produtoQuimicoId: entity.produtoQuimicoId,
+        produtoQuimicoId: entity.produtoQuimico.id,
         quantidade: getOrThrow(
           QuantidadeCarga.create(
             Number(entity.quantidade.valor),
@@ -138,6 +144,7 @@ export class TypeOrmCargaQuimicaRepository implements CargaQuimicaRepository {
         destino: entity.destino,
         dataEntrada: entity.dataEntrada,
         dataCriacao: entity.dataCriacao,
+        dataAtualizacao: entity.dataAtualizacao,
         grupoCompatibilidade: entity.grupoCompatibilidade,
         autorizacaoSuperiorId: entity.autorizacaoSuperiorId ?? undefined,
         status: entity.status,

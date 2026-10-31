@@ -13,6 +13,7 @@ import { QuantidadeCargaEmbeddable } from './quantidade-carga.embeddable.js';
 import { DocumentoCargaOrmEntity } from './documento-carga.orm-entity.js';
 import { InspecaoOrmEntity } from './inspecao.orm-entity.js';
 import { HistoricoStatusCargaOrmEntity } from './historico-status-carga.orm-entity.js';
+import { ProdutoQuimicoOrmEntity } from './produto-quimico.orm-entity.js';
 import { ResponsavelTecnicoOrmEntity } from './responsavel-tecnico.orm-entity.js';
 
 @Entity('carga_quimica')
@@ -23,7 +24,14 @@ export class CargaQuimicaOrmEntity {
   @Column({ name: 'codigo_identificacao', type: 'varchar', unique: true })
   codigoIdentificacao: string;
 
-  @Column({ name: 'produto_quimico_id', type: 'varchar' })
+  @ManyToOne(() => ProdutoQuimicoOrmEntity, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'produto_quimico_id' })
+  produtoQuimico: Relation<ProdutoQuimicoOrmEntity>;
+
+  @RelationId((carga: CargaQuimicaOrmEntity) => carga.produtoQuimico)
   produtoQuimicoId: string;
 
   @Column(() => QuantidadeCargaEmbeddable, { prefix: false })
@@ -54,6 +62,13 @@ export class CargaQuimicaOrmEntity {
     default: () => 'CURRENT_TIMESTAMP',
   })
   dataCriacao: Date;
+
+  @Column({
+    name: 'data_atualizacao',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  dataAtualizacao: Date;
 
   @Column({ name: 'grupo_compatibilidade', type: 'varchar' })
   grupoCompatibilidade: string;

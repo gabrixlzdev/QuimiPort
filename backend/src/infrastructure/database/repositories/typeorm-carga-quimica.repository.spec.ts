@@ -61,7 +61,14 @@ describe('TypeOrmCargaQuimicaRepository', () => {
     expect(dataSource.transaction).toHaveBeenCalledOnce();
     expect(manager.save).toHaveBeenCalledOnce();
     expect(entityPersistida?.dataCriacao).toEqual(carga.dataCriacao);
+    expect(entityPersistida?.dataAtualizacao).toEqual(
+      new Date('2026-01-02T00:00:00Z'),
+    );
     expect(entityPersistida?.codigoIdentificacao).toBe('ABC12345');
+    expect(entityPersistida?.produtoQuimico).toMatchObject({ id: 'produto-1' });
+    expect(entityPersistida?.responsavelTecnico).toMatchObject({
+      id: 'responsavel-1',
+    });
     expect(entityPersistida?.autorizacaoSuperiorId).toBe('gestor-superior-1');
     expect(entityPersistida?.historicoStatus).toHaveLength(2);
     expect(entityPersistida?.historicoStatus[1]).toMatchObject({
@@ -80,6 +87,9 @@ describe('TypeOrmCargaQuimicaRepository', () => {
       getOrThrow(CodigoIdentificacao.create('ABC12345')),
     );
     expect(recuperada?.dataCriacao).toEqual(carga.dataCriacao);
+    expect(recuperada?.dataAtualizacao).toEqual(
+      new Date('2026-01-02T00:00:00Z'),
+    );
     expect(recuperada?.autorizacaoSuperiorId).toBe('gestor-superior-1');
     expect(recuperada?.historicoStatus).toEqual(carga.historicoStatus);
   });

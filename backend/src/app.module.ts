@@ -17,6 +17,9 @@ import { AnexarDocumentoUseCase } from './application/use-cases/cargas/anexar-do
 import { CancelarCargaUseCase } from './application/use-cases/cargas/cancelar-carga.use-case.js';
 import { ConcluirMovimentacaoUseCase } from './application/use-cases/cargas/concluir-movimentacao.use-case.js';
 import { IniciarMovimentacaoUseCase } from './application/use-cases/cargas/iniciar-movimentacao.use-case.js';
+import { ListarCargasUseCase } from './application/use-cases/cargas/listar-cargas.use-case.js';
+import { BuscarCargaUseCase } from './application/use-cases/cargas/buscar-carga.use-case.js';
+import { AtualizarStatusCargaUseCase } from './application/use-cases/cargas/atualizar-status-carga.use-case.js';
 import { CadastrarResponsavelTecnicoUseCase } from './application/use-cases/responsaveis/cadastrar-responsavel-tecnico.use-case.js';
 import { ResponsavelTecnicoRepository } from './domain/repositories/responsavel-tecnico.repository.interface.js';
 import { CadastrarAreaArmazenamentoUseCase } from './application/use-cases/areas/cadastrar-area-armazenamento.use-case.js';
@@ -180,6 +183,24 @@ import { ResponsaveisTecnicosController } from './presentation/controllers/respo
       provide: ConcluirMovimentacaoUseCase,
       useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
         new ConcluirMovimentacaoUseCase(repo),
+      inject: [TypeOrmCargaQuimicaRepository],
+    },
+    {
+      provide: ListarCargasUseCase,
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
+        new ListarCargasUseCase(repo),
+      inject: [TypeOrmCargaQuimicaRepository],
+    },
+    {
+      provide: BuscarCargaUseCase,
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
+        new BuscarCargaUseCase(repo),
+      inject: [TypeOrmCargaQuimicaRepository],
+    },
+    {
+      provide: AtualizarStatusCargaUseCase,
+      useFactory: (repo: TypeOrmCargaQuimicaRepository) =>
+        new AtualizarStatusCargaUseCase(repo),
       inject: [TypeOrmCargaQuimicaRepository],
     },
     {

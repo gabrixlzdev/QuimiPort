@@ -26,6 +26,8 @@ export type CargaQuimicaOutputDto = {
   grupoCompatibilidade: string;
   status: StatusCarga;
   autorizacaoSuperiorId?: string;
+  dataCriacao: Date;
+  dataAtualizacao: Date;
 };
 
 export type ValidarDocumentacaoInputDto = {
@@ -70,6 +72,13 @@ export type BloquearCargaInputDto = {
 
 export type AlterarStatusCargaInputDto = {
   cargaQuimicaId: string;
+  responsavelId: string;
+  motivo: string;
+};
+
+export type AtualizarStatusCargaInputDto = {
+  cargaQuimicaId: string;
+  status: StatusCarga;
   responsavelId: string;
   motivo: string;
 };
